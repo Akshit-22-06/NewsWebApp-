@@ -1,0 +1,32 @@
+@{
+    ViewData["Title"] = "About";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<h4>NewsSphere Editorial Platform</h4>
+<hr />
+
+<p class="lead">
+    Dedicated to rigorous investigative journalism, impartial global coverage, and democratic public discourse.
+</p>
+
+<h5>Our Mission &amp; Editorial Ethics</h5>
+<p>
+    Founded with the goal of upholding fearless independent reporting, NewsSphere covers world affairs, science, technology,
+    environmental policy, and business developments with unwavering accuracy and impartiality.
+</p>
+<p>
+    We hold our newsroom to strict verification protocols: every report undergoes multi-source corroboration before publication.
+    Our authors disclose relevant industry relationships, and we clearly separate factual news reports from opinion analysis.
+</p>
+
+<h5>Architecture</h5>
+<p>
+    This web application is engineered with ASP.NET Core MVC, Entity Framework Core, ASP.NET Core Identity, and Bootstrap 5.
+</p>
+
+<div class="mt-4">
+    <a asp-controller="News" asp-action="Index" class="btn btn-primary">Browse News</a>
+    <a asp-controller="Author" asp-action="Index" class="btn btn-outline-secondary">Meet Our Journalists</a>
+</div>

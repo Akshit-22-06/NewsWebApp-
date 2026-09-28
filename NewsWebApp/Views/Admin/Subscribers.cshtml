@@ -1,0 +1,65 @@
+@model IEnumerable<NewsWebApp.Models.NewsletterSubscriber>
+@{
+    ViewData["Title"] = "Subscribers";
+}
+
+<h1>Newsletter Subscribers</h1>
+
+<partial name="_AdminNav" />
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>Subscriber List</h4>
+    <span class="badge bg-success">
+        @Model.Count(s => s.IsActive) Active
+    </span>
+</div>
+
+<table class="table table-striped table-hover align-middle">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Email</th>
+            <th>Subscribed Date</th>
+            <th>Status</th>
+            <th class="text-end">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (!Model.Any())
+        {
+            <tr>
+                <td colspan="5" class="text-center text-muted py-4">
+                    No subscribers found.
+                </td>
+            </tr>
+        }
+        @foreach (var sub in Model)
+        {
+            <tr>
+                <td>@sub.Id</td>
+                <td>
+                    <strong>@sub.Email</strong>
+                </td>
+                <td class="text-muted small">
+                    @sub.SubscribedAt.ToString("yyyy-MM-dd HH:mm")
+                </td>
+                <td>
+                    @if (sub.IsActive)
+                    {
+                        <span class="badge bg-success">Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Inactive</span>
+                    }
+                </td>
+                <td class="text-end">
+                    <form asp-action="DeleteSubscriber" asp-route-id="@sub.Id" method="post" class="d-inline" onsubmit="return confirm('Remove @sub.Email from subscriber list?');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

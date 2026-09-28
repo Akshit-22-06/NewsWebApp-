@@ -1,0 +1,114 @@
+@model NewsWebApp.ViewModels.NewsDetailsViewModel
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<ApplicationUser> UserManager
+
+@{
+    ViewData["Title"] = "Details";
+    var article = Model.Article;
+}
+
+<h1>Details</h1>
+
+<div>
+    <h4>NewsArticle</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">Title</dt>
+        <dd class="col-sm-10">@article.Title</dd>
+
+        <dt class="col-sm-2">Category</dt>
+        <dd class="col-sm-10">@article.Category?.Name</dd>
+
+        <dt class="col-sm-2">Author / Source</dt>
+        <dd class="col-sm-10">@(article.Author?.DisplayName ?? article.SourceName ?? "Staff")</dd>
+
+        <dt class="col-sm-2">Published Date</dt>
+        <dd class="col-sm-10">@(article.PublishedDate?.ToString("yyyy-MM-dd HH:mm") ?? "Draft")</dd>
+
+        <dt class="col-sm-2">Summary</dt>
+        <dd class="col-sm-10">@article.Summary</dd>
+
+        <dt class="col-sm-2">Content</dt>
+        <dd class="col-sm-10" style="white-space: pre-line;">@article.Content</dd>
+
+        <dt class="col-sm-2">Engagement</dt>
+        <dd class="col-sm-10">
+            <span>@article.ViewCount views</span> |
+            <span>@article.LikeCount likes</span>
+            <form asp-action="Like" asp-route-id="@article.Id" method="post" class="d-inline ms-2">
+                <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+                <button type="submit" class="btn btn-sm btn-outline-danger">Like</button>
+            </form>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <form asp-action="ToggleBookmark" asp-route-id="@article.Id" method="post" class="d-inline ms-1">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">@(Model.IsBookmarked ? "Remove Bookmark" : "Save for Later")</button>
+                </form>
+            }
+        </dd>
+
+        @if (!string.IsNullOrEmpty(article.SourceUrl))
+        {
+            <dt class="col-sm-2">Original Wire</dt>
+            <dd class="col-sm-10">
+                <a href="@article.SourceUrl" target="_blank" rel="noopener noreferrer">@article.SourceName &nearr;</a>
+            </dd>
+        }
+    </dl>
+</div>
+
+<div class="mb-4">
+    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+</div>
+
+<h4>Comments (@article.Comments.Count)</h4>
+<hr />
+
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <form asp-action="AddComment" method="post" class="mb-4">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="newsArticleId" value="@article.Id" />
+        <input type="hidden" name="articleSlug" value="@article.Slug" />
+        <div class="mb-3">
+            <label class="form-label">Leave a Comment</label>
+            <textarea name="content" class="form-control" rows="3" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Post Comment</button>
+    </form>
+}
+else
+{
+    <p><a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path">Log in</a> to post a comment.</p>
+}
+
+@if (!article.Comments.Any())
+{
+    <p class="text-muted">No comments yet.</p>
+}
+else
+{
+    <ul class="list-group mb-4">
+        @foreach (var c in article.Comments)
+        {
+            <li class="list-group-item">
+                <div class="d-flex justify-content-between">
+                    <strong>@(c.User?.FullName ?? c.User?.UserName ?? "Reader")</strong>
+                    <small class="text-muted">@c.CreatedAt.ToString("yyyy-MM-dd HH:mm")</small>
+                </div>
+                <p class="mb-1">@c.Content</p>
+                @if (User.IsInRole("Admin") || c.UserId == UserManager.GetUserId(User))
+                {
+                    <form asp-action="DeleteComment" method="post" class="mt-1">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@c.Id" />
+                        <input type="hidden" name="slug" value="@article.Slug" />
+                        <button type="submit" class="btn btn-sm btn-link text-danger p-0" onclick="return confirm('Delete this comment?');">Delete</button>
+                    </form>
+                }
+            </li>
+        }
+    </ul>
+}

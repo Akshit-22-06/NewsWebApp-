@@ -1,0 +1,173 @@
+@model NewsWebApp.ViewModels.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<h1>Admin Dashboard</h1>
+
+<partial name="_AdminNav" />
+
+<!-- Metrics Cards -->
+<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3 mb-4">
+    <div class="col">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <h2 class="card-title text-primary">@Model.TotalArticles</h2>
+                <p class="card-text text-muted">Total Articles</p>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <h2 class="card-title text-success">@Model.PublishedArticles</h2>
+                <p class="card-text text-muted">Published</p>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <h2 class="card-title text-warning">@Model.DraftArticles</h2>
+                <p class="card-text text-muted">Drafts</p>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <h2 class="card-title text-info">@Model.TotalViews.ToString("N0")</h2>
+                <p class="card-text text-muted">Total Views</p>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <h2 class="card-title">@Model.TotalCategories</h2>
+                <p class="card-text text-muted">Categories</p>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <h2 class="card-title">@Model.TotalComments</h2>
+                <p class="card-text text-muted">Comments</p>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <h2 class="card-title">@Model.TotalUsers</h2>
+                <p class="card-text text-muted">Users</p>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <h2 class="card-title">@Model.TotalSubscribers</h2>
+                <p class="card-text text-muted">Subscribers</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Content Tables -->
+<div class="row">
+    <!-- Recent Articles -->
+    <div class="col-lg-6 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h4>Recent Articles</h4>
+            <a asp-action="Articles">View All</a>
+        </div>
+
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var article in Model.RecentArticles)
+                {
+                    <tr>
+                        <td>
+                            <a asp-controller="News" asp-action="Details" asp-route-slug="@article.Slug" class="fw-bold">
+                                @(article.Title.Length > 40 ? article.Title.Substring(0, 40) + "..." : article.Title)
+                            </a>
+                            <div class="text-muted small">
+                                @article.Category?.Name &bull; @(article.PublishedDate?.ToString("MMM dd") ?? "Draft")
+                            </div>
+                        </td>
+                        <td>
+                            @if (article.IsPublished)
+                            {
+                                <span class="badge bg-success">Published</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">Draft</span>
+                            }
+                        </td>
+                        <td>
+                            <a asp-action="EditArticle" asp-route-id="@article.Id" class="btn btn-outline-secondary btn-sm">Edit</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Recent Reader Comments -->
+    <div class="col-lg-6 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h4>Recent Comments</h4>
+            @if (User.IsInRole("Admin"))
+            {
+                <a asp-action="Comments">Moderate</a>
+            }
+        </div>
+
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Reader</th>
+                    <th>Comment</th>
+                    <th>Article</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.RecentComments.Any())
+                {
+                    <tr>
+                        <td colspan="3" class="text-center text-muted">No comments submitted yet.</td>
+                    </tr>
+                }
+                @foreach (var comment in Model.RecentComments)
+                {
+                    <tr>
+                        <td>
+                            <strong>@(comment.User?.FullName ?? "Reader")</strong>
+                            <div class="text-muted small">
+                                @comment.CreatedAt.ToString("MMM dd, hh:mm tt")
+                            </div>
+                        </td>
+                        <td>
+                            @(comment.Content.Length > 50 ? comment.Content.Substring(0, 50) + "..." : comment.Content)
+                        </td>
+                        <td>
+                            <a asp-controller="News" asp-action="Details" asp-route-slug="@comment.NewsArticle?.Slug" class="btn btn-link btn-sm p-0">
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

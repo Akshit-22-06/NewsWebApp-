@@ -1,0 +1,59 @@
+@model NewsWebApp.ViewModels.BookmarkListViewModel
+
+@{
+    ViewData["Title"] = "Saved Articles";
+}
+
+<h1>Saved Articles</h1>
+
+<p class="text-muted">Your personal saved reading list (@Model.TotalBookmarks items)</p>
+
+@if (!Model.BookmarkedArticles.Any())
+{
+    <div class="alert alert-info">
+        You have no saved articles. Browse the <a asp-action="Index">news articles</a> to save stories for later.
+    </div>
+}
+else
+{
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Published Date</th>
+                <th>Author</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in Model.BookmarkedArticles)
+        {
+            <tr>
+                <td>
+                    <a asp-action="Details" asp-route-slug="@item.Slug" class="fw-bold text-decoration-none">
+                        @item.Title
+                    </a>
+                </td>
+                <td>
+                    <span class="badge bg-secondary">@item.Category?.Name</span>
+                </td>
+                <td>
+                    @(item.PublishedDate?.ToString("yyyy-MM-dd") ?? "Draft")
+                </td>
+                <td>
+                    @(item.Author?.DisplayName ?? "Staff")
+                </td>
+                <td>
+                    <a asp-action="Details" asp-route-slug="@item.Slug" class="btn btn-sm btn-outline-primary">Details</a>
+                    <form asp-action="ToggleBookmark" asp-route-id="@item.Id" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="returnUrl" value="/news/bookmarks" />
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}

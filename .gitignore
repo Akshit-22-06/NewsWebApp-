@@ -1,0 +1,43 @@
+## .NET Core / ASP.NET Core
+bin/
+obj/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## SQLite & Local Databases
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+## macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+## IDE & Editors
+.idea/
+.vscode/
+*.swp
+*~
+.archify-preview*
+
+## Node & Frontend builds (if any)
+node_modules/
+dist/

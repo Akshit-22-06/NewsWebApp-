@@ -1,0 +1,40 @@
+@model IEnumerable<(NewsWebApp.Models.Category Category, int ArticleCount)>
+
+@{
+    ViewData["Title"] = "Categories";
+}
+
+<h1>Categories</h1>
+
+<table class="table table-striped table-hover">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Slug</th>
+            <th>Description</th>
+            <th>Articles</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                <strong>@item.Category.Name</strong>
+            </td>
+            <td>
+                <code>@item.Category.Slug</code>
+            </td>
+            <td>
+                @(item.Category.Description ?? "General news and editorial articles.")
+            </td>
+            <td>
+                <span class="badge bg-secondary">@item.ArticleCount</span>
+            </td>
+            <td>
+                <a asp-controller="News" asp-action="Category" asp-route-slug="@item.Category.Slug" class="btn btn-sm btn-outline-primary">Browse Articles</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>

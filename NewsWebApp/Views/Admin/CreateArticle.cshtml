@@ -1,0 +1,86 @@
+@model NewsWebApp.ViewModels.CreateNewsViewModel
+@{
+    ViewData["Title"] = "Create Article";
+}
+
+<h1>Create</h1>
+
+<partial name="_AdminNav" />
+
+<h4>NewsArticle</h4>
+<hr />
+
+<div class="row">
+    <div class="col-md-8">
+        <form asp-controller="Admin" asp-action="CreateArticle" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Title" class="control-label"></label>
+                <input asp-for="Title" class="form-control" autofocus />
+                <span asp-validation-for="Title" class="text-danger"></span>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label asp-for="CategoryId" class="control-label">Category</label>
+                    <select asp-for="CategoryId" asp-items="Model.Categories" class="form-select">
+                        <option value="">-- Select Category --</option>
+                    </select>
+                    <span asp-validation-for="CategoryId" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Slug" class="control-label">Slug (Optional)</label>
+                    <input asp-for="Slug" class="form-control" placeholder="auto-generated-if-blank" />
+                    <span asp-validation-for="Slug" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="ImageUrl" class="control-label">Image URL</label>
+                <input asp-for="ImageUrl" class="form-control" placeholder="https://..." />
+                <span asp-validation-for="ImageUrl" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Summary" class="control-label"></label>
+                <textarea asp-for="Summary" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Summary" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Content" class="control-label"></label>
+                <textarea asp-for="Content" class="form-control" rows="10"></textarea>
+                <span asp-validation-for="Content" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3 form-check">
+                <label class="form-check-label">
+                    <input class="form-check-input" asp-for="IsPublished" /> Publish immediately
+                </label>
+            </div>
+
+            @if (User.IsInRole("Admin"))
+            {
+                <div class="form-group mb-3 form-check">
+                    <label class="form-check-label">
+                        <input class="form-check-input" asp-for="IsFeatured" /> Featured on home page hero
+                    </label>
+                </div>
+            }
+
+            <div class="form-group mb-3">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Articles">Back to List</a>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

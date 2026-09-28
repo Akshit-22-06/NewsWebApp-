@@ -1,0 +1,97 @@
+@model NewsWebApp.ViewModels.HomeViewModel
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center mb-5">
+    <h1 class="display-4">Welcome to NewsWebApp</h1>
+    <p class="lead text-muted">A clean ASP.NET Core MVC application with Entity Framework Core, Identity, and Live News Ingestion.</p>
+</div>
+
+@if (Model.FeaturedArticles.Any())
+{
+    var featured = Model.FeaturedArticles.First();
+    <div class="card mb-4">
+        <div class="card-body">
+            <span class="badge bg-primary mb-2">@featured.Category?.Name</span>
+            @if (featured.IsLiveSynced)
+            {
+                <span class="badge bg-danger mb-2">Live Wire</span>
+            }
+            <h2 class="card-title">
+                <a asp-controller="News" asp-action="Details" asp-route-slug="@featured.Slug" class="text-decoration-none text-dark">
+                    @featured.Title
+                </a>
+            </h2>
+            <p class="card-text text-muted">@featured.Summary</p>
+            <div class="text-muted small mb-3">
+                By @(featured.Author?.DisplayName ?? featured.SourceName ?? "Staff") | @(featured.PublishedDate?.ToString("MMMM dd, yyyy") ?? "Recent") | @featured.ViewCount views
+            </div>
+            <a asp-controller="News" asp-action="Details" asp-route-slug="@featured.Slug" class="btn btn-primary">Read More &rarr;</a>
+        </div>
+    </div>
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <h3>Latest News Articles</h3>
+        <hr />
+        @foreach (var article in Model.LatestArticles)
+        {
+            <div class="mb-4 pb-3 border-bottom">
+                <span class="badge bg-secondary mb-1">@article.Category?.Name</span>
+                <h4>
+                    <a asp-controller="News" asp-action="Details" asp-route-slug="@article.Slug" class="text-decoration-none text-dark">
+                        @article.Title
+                    </a>
+                </h4>
+                <p class="text-muted">@article.Summary</p>
+                <div class="text-muted small">
+                    Published: @(article.PublishedDate?.ToString("MMM dd, yyyy") ?? "Recent") | By: @(article.Author?.DisplayName ?? article.SourceName ?? "Staff") | @article.ViewCount views
+                </div>
+            </div>
+        }
+    </div>
+    <div class="col-md-4">
+        <h3>Trending</h3>
+        <hr />
+        <ul class="list-group mb-4">
+            @foreach (var pop in Model.PopularArticles)
+            {
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <a asp-controller="News" asp-action="Details" asp-route-slug="@pop.Slug" class="text-decoration-none text-dark">
+                        @pop.Title
+                    </a>
+                    <span class="badge bg-primary rounded-pill">@pop.ViewCount</span>
+                </li>
+            }
+        </ul>
+
+        <h3>Categories</h3>
+        <hr />
+        <div class="list-group mb-4">
+            @foreach (var cat in Model.CategoriesWithCounts)
+            {
+                <a asp-controller="News" asp-action="Category" asp-route-slug="@cat.Category.Slug" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    @cat.Category.Name
+                    <span class="badge bg-secondary rounded-pill">@cat.ArticleCount</span>
+                </a>
+            }
+        </div>
+
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title">Newsletter</h5>
+                <p class="card-text small text-muted">Subscribe to our morning news briefing.</p>
+                <form asp-controller="Home" asp-action="Subscribe" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="returnUrl" value="/" />
+                    <div class="input-group mb-2">
+                        <input type="email" name="email" class="form-control" placeholder="Email address" required />
+                        <button class="btn btn-outline-primary" type="submit">Subscribe</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

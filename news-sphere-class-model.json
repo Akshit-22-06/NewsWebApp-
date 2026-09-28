@@ -1,0 +1,206 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "NewsSphere Class & Component Architecture Model",
+    "output": "news-sphere-class-model.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "mvc-to-repo",
+        "label": "Controller & Repository Path",
+        "focus": ["controllers", "news_repo", "user_repo", "dbcontext"],
+        "note": "Follow controllers dispatching actions into scoped repositories backed by DbContext."
+      },
+      {
+        "id": "ingestion-hierarchy",
+        "label": "Ingestion Service Hierarchy",
+        "focus": ["bg_worker", "services", "news_repo", "dbcontext"],
+        "note": "Examine how the background hosted service orchestrates LiveNewsService and repository persistence."
+      },
+      {
+        "id": "entity-mapping",
+        "label": "Entity Framework Data Model",
+        "focus": ["dbcontext", "content_entities", "user_entities"],
+        "note": "Inspect how ApplicationDbContext maps domain entity collections to relational tables."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "bg_worker",
+      "type": "backend",
+      "label": "LiveNewsSyncWorker",
+      "sublabel": "BackgroundService",
+      "tag": "IHostedService",
+      "pos": [60, 100],
+      "size": [170, 64]
+    },
+    {
+      "id": "services",
+      "type": "backend",
+      "label": "LiveNewsService",
+      "sublabel": "ILiveNewsService",
+      "tag": "Ingestion & Sync",
+      "pos": [350, 100],
+      "size": [170, 64]
+    },
+    {
+      "id": "controllers",
+      "type": "backend",
+      "label": "MVC Controllers",
+      "sublabel": "Home, News, Admin, Account",
+      "brand": "dotnet",
+      "pos": [660, 100],
+      "size": [180, 64]
+    },
+    {
+      "id": "news_repo",
+      "type": "backend",
+      "label": "NewsRepository",
+      "sublabel": "INewsRepository",
+      "tag": "Article & Category Queries",
+      "pos": [350, 270],
+      "size": [170, 64]
+    },
+    {
+      "id": "user_repo",
+      "type": "backend",
+      "label": "Author & Comment Repos",
+      "sublabel": "IAuthor, IComment, IBookmark",
+      "tag": "Engagement Queries",
+      "pos": [660, 270],
+      "size": [180, 64]
+    },
+    {
+      "id": "dbcontext",
+      "type": "database",
+      "label": "ApplicationDbContext",
+      "sublabel": "IdentityDbContext<User>",
+      "tag": "EF Core Code-First",
+      "brand": "sqlite",
+      "pos": [505, 440],
+      "size": [190, 64]
+    },
+    {
+      "id": "content_entities",
+      "type": "database",
+      "label": "Content Entities",
+      "sublabel": "NewsArticle, Category, Author",
+      "tag": "DbSet<T> Models",
+      "pos": [180, 440],
+      "size": [190, 64]
+    },
+    {
+      "id": "user_entities",
+      "type": "database",
+      "label": "User & Social Entities",
+      "sublabel": "ApplicationUser, Comment, Bookmark",
+      "tag": "Identity & Engagement",
+      "pos": [830, 440],
+      "size": [190, 64]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Application Service & Controller Tier",
+      "wraps": ["bg_worker", "services", "controllers"]
+    },
+    {
+      "kind": "security-group",
+      "label": "Data Access & Domain Model Tier (EF Core)",
+      "wraps": ["news_repo", "user_repo", "dbcontext", "content_entities", "user_entities"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "worker-to-service",
+      "from": "bg_worker",
+      "to": "services",
+      "label": "executes sync",
+      "variant": "dashed"
+    },
+    {
+      "id": "service-to-repo",
+      "from": "services",
+      "to": "news_repo",
+      "label": "persists news",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "controller-to-newsrepo",
+      "from": "controllers",
+      "to": "news_repo",
+      "label": "injects repo"
+    },
+    {
+      "id": "controller-to-userrepo",
+      "from": "controllers",
+      "to": "user_repo",
+      "label": "injects repos",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "newsrepo-to-db",
+      "from": "news_repo",
+      "to": "dbcontext",
+      "label": "LINQ query",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "userrepo-to-db",
+      "from": "user_repo",
+      "to": "dbcontext",
+      "label": "LINQ query",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "db-to-content",
+      "from": "dbcontext",
+      "to": "content_entities",
+      "label": "DbSet mapping"
+    },
+    {
+      "id": "db-to-user",
+      "from": "dbcontext",
+      "to": "user_entities",
+      "label": "DbSet mapping"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Dependency Injection Contract",
+      "items": [
+        "Controllers inject repository interfaces (INewsRepository, IAuthorRepository, etc.)",
+        "Repositories are registered with Scoped lifetime in Program.cs",
+        "LiveNewsService is injected into background tasks via IServiceScopeFactory"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Data Context & Entity Sets",
+      "items": [
+        "ApplicationDbContext inherits IdentityDbContext<ApplicationUser>",
+        "Configures fluent relationships, unique slug indices, and cascade rules in OnModelCreating",
+        "Supports dynamic provider switching between SQLite and SQL Server"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Decoupled Clean Architecture",
+      "items": [
+        "Views bind strictly to ViewModels rather than raw database entities",
+        "Repositories isolate async EF Core queries and projection logic",
+        "Background poller runs asynchronously without blocking HTTP request pipelines"
+      ]
+    }
+  ]
+}

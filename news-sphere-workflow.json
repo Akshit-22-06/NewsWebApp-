@@ -1,0 +1,250 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "NewsSphere Ingestion & Publishing Workflow",
+    "output": "news-sphere-flow.html",
+    "animation": "trace",
+    "visual_preset": "signal-flow",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "automated-sync",
+        "label": "Automated Feed Sync Path",
+        "focus": ["sync_trigger", "fetch_service", "dedup_engine", "repo_write", "db_store"],
+        "note": "Follow background syndication polling external news sources into database storage."
+      },
+      {
+        "id": "editorial-workflow",
+        "label": "Editorial Authoring Flow",
+        "focus": ["author_draft", "auth_gate", "repo_write", "db_store"],
+        "note": "Examine author article creation with role-based access control and persistence."
+      },
+      {
+        "id": "reader-serving",
+        "label": "Article Delivery Flow",
+        "focus": ["db_store", "view_render", "reader_view"],
+        "note": "Trace how persisted articles are retrieved and rendered to client browsers."
+      }
+    ]
+  },
+  "lanes": [
+    { "id": "sources", "label": "External Feed Sources" },
+    { "id": "engine", "label": "Ingestion & Sync Engine" },
+    { "id": "editorial", "label": "Editorial & Governance" },
+    { "id": "presentation", "label": "Web Presentation" },
+    { "id": "persistence", "label": "Data Persistence" }
+  ],
+  "phases": [
+    { "id": "harvest", "label": "Harvest & Intake", "fromCol": 0, "toCol": 1 },
+    { "id": "process", "label": "Process & Validate", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "publish", "label": "Persist & Deliver", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "groups": [
+    { "id": "ingestion_loop", "label": "Ingestion pipeline", "lane": "engine", "fromCol": 1, "toCol": 3, "variant": "emphasis" },
+    { "id": "editorial_gate", "label": "Editorial governance", "lane": "editorial", "fromCol": 2, "toCol": 3, "variant": "security" },
+    { "id": "delivery_stage", "label": "Delivery stage", "lane": "presentation", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "mainPath": [
+    "sync_trigger",
+    "fetch_service",
+    "dedup_engine",
+    "repo_write",
+    "db_store",
+    "view_render",
+    "reader_view"
+  ],
+  "nodes": [
+    {
+      "id": "sources_node",
+      "lane": "sources",
+      "col": 0,
+      "type": "external",
+      "label": "News APIs & RSS",
+      "sublabel": "HackerNews, GNews, BBC",
+      "width": 140
+    },
+    {
+      "id": "sync_trigger",
+      "lane": "engine",
+      "col": 0,
+      "type": "backend",
+      "label": "Hourly Poller",
+      "sublabel": "IHostedService cron",
+      "tag": "Background Worker",
+      "width": 140
+    },
+    {
+      "id": "fetch_service",
+      "lane": "engine",
+      "col": 1,
+      "type": "backend",
+      "label": "LiveNewsService",
+      "sublabel": "Concurrent HttpClient",
+      "tag": "Multi-Channel",
+      "width": 140
+    },
+    {
+      "id": "dedup_engine",
+      "lane": "engine",
+      "col": 2,
+      "type": "backend",
+      "label": "Deduplicator",
+      "sublabel": "SlugHelper & normalizer",
+      "tag": "Filter Duplicates",
+      "width": 140
+    },
+    {
+      "id": "author_draft",
+      "lane": "editorial",
+      "col": 1,
+      "type": "frontend",
+      "label": "Author Editor",
+      "sublabel": "Create Article Form",
+      "width": 140
+    },
+    {
+      "id": "auth_gate",
+      "lane": "editorial",
+      "col": 2,
+      "type": "security",
+      "label": "Identity Auth",
+      "sublabel": "Authorize(Roles=Admin,Author)",
+      "tag": "RBAC Gate",
+      "width": 140
+    },
+    {
+      "id": "repo_write",
+      "lane": "engine",
+      "col": 3,
+      "type": "backend",
+      "label": "NewsRepository",
+      "sublabel": "AddArticleAsync",
+      "tag": "Repository Pattern",
+      "width": 140
+    },
+    {
+      "id": "db_store",
+      "lane": "persistence",
+      "col": 4,
+      "type": "database",
+      "label": "ApplicationDb",
+      "sublabel": "SaveChangesAsync",
+      "brand": "sqlite",
+      "width": 140
+    },
+    {
+      "id": "view_render",
+      "lane": "presentation",
+      "col": 4,
+      "type": "frontend",
+      "label": "Razor View Engine",
+      "sublabel": "Views/News/Details",
+      "tag": "Pure Vanilla CSS",
+      "width": 140
+    },
+    {
+      "id": "reader_view",
+      "lane": "presentation",
+      "col": 5,
+      "type": "external",
+      "label": "Reader Browser",
+      "sublabel": "Rendered News Details",
+      "width": 140
+    }
+  ],
+  "edges": [
+    {
+      "id": "cron-to-fetch",
+      "from": "sync_trigger",
+      "to": "fetch_service",
+      "label": "triggers",
+      "variant": "emphasis"
+    },
+    {
+      "id": "sources-to-fetch",
+      "from": "sources_node",
+      "to": "fetch_service",
+      "label": "HTTP stream",
+      "variant": "default"
+    },
+    {
+      "id": "fetch-to-dedup",
+      "from": "fetch_service",
+      "to": "dedup_engine",
+      "label": "raw items",
+      "variant": "default"
+    },
+    {
+      "id": "dedup-to-repo",
+      "from": "dedup_engine",
+      "to": "repo_write",
+      "label": "clean news",
+      "variant": "emphasis"
+    },
+    {
+      "id": "author-to-auth",
+      "from": "author_draft",
+      "to": "auth_gate",
+      "label": "submit",
+      "variant": "security"
+    },
+    {
+      "id": "auth-to-repo",
+      "from": "auth_gate",
+      "to": "repo_write",
+      "label": "authorized",
+      "variant": "security"
+    },
+    {
+      "id": "repo-to-db",
+      "from": "repo_write",
+      "to": "db_store",
+      "label": "EF Core commit",
+      "variant": "emphasis"
+    },
+    {
+      "id": "db-to-view",
+      "from": "db_store",
+      "to": "view_render",
+      "label": "query slug",
+      "variant": "default"
+    },
+    {
+      "id": "view-to-reader",
+      "from": "view_render",
+      "to": "reader_view",
+      "label": "HTTP response",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Automated Ingestion Rail",
+      "items": [
+        "LiveNewsSyncBackgroundService polls feeds every 60 minutes",
+        "LiveNewsService queries Hacker News, GNews, NewsAPI, and RSS XML feeds concurrently",
+        "SlugHelper standardizes unique slugs and deduplicates existing article titles"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Editorial Security Gate",
+      "items": [
+        "Authors and Administrators submit articles via Razor management forms",
+        "ASP.NET Core Identity enforces role-based access before action execution",
+        "Validated articles merge into the same repository persistence channel"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Reader Delivery",
+      "items": [
+        "Slug-based routing resolves /news/{slug} without database ID exposure",
+        "Views render server-side using semantic HTML5 and responsive Vanilla CSS",
+        "Anonymous readers access breaking news without authentication barriers"
+      ]
+    }
+  ]
+}

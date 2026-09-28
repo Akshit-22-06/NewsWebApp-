@@ -1,0 +1,1936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NewsSphere — Role-to-Action Method Authorization & Request Flow Matrix</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --bg-card: rgba(17, 24, 39, 0.85);
+      --bg-card-hover: rgba(26, 36, 56, 0.95);
+      --bg-alt: #1e293b;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-focus: #3b82f6;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-sub: #cbd5e1;
+      --primary: #3b82f6;
+      --primary-glow: rgba(59, 130, 246, 0.35);
+      --accent: #8b5cf6;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.15);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.15);
+      --danger: #ef4444;
+      --danger-bg: rgba(239, 68, 68, 0.15);
+      --info: #06b6d4;
+      --info-bg: rgba(6, 182, 212, 0.15);
+      --radius: 12px;
+      --radius-sm: 6px;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+    }
+
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --bg-card: rgba(255, 255, 255, 0.95);
+      --bg-card-hover: rgba(241, 245, 249, 1);
+      --bg-alt: #e2e8f0;
+      --border: rgba(0, 0, 0, 0.08);
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --text-sub: #334155;
+      --primary: #2563eb;
+      --primary-glow: rgba(37, 99, 235, 0.2);
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font);
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 24px;
+      min-height: 100vh;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+
+    /* HEADER */
+    header {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      margin-bottom: 24px;
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .header-content h1 {
+      font-size: 26px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #f472b6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-content p {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-top: 6px;
+    }
+
+    .header-badges {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      color: var(--text-sub);
+    }
+
+    .theme-toggle-btn {
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .theme-toggle-btn:hover {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    /* SUMMARY STATS GRID */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .stat-card .stat-title {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .stat-card .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .stat-card .stat-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* INTERACTIVE ROLE FILTER BAR */
+    .controls-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .role-selector-label {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .role-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .role-btn {
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-alt);
+      color: var(--text);
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .role-btn:hover {
+      border-color: var(--primary);
+    }
+
+    .role-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+      box-shadow: 0 0 15px var(--primary-glow);
+    }
+
+    .filter-search-row {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .filter-tab {
+      padding: 6px 14px;
+      border-radius: 9999px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .filter-tab:hover {
+      background: var(--bg-alt);
+      color: var(--text);
+    }
+
+    .filter-tab.active {
+      background: var(--text);
+      color: var(--bg);
+      border-color: var(--text);
+      font-weight: 700;
+    }
+
+    .search-box {
+      position: relative;
+      min-width: 280px;
+      flex: 1;
+      max-width: 400px;
+    }
+
+    .search-box input {
+      width: 100%;
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 14px 8px 36px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-box input:focus {
+      border-color: var(--border-focus);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    /* ARCHITECTURAL FLOW DIAGRAM (INTERACTIVE SVG CANVAS) */
+    .flow-diagram-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .section-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .flow-canvas-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      background: rgba(10, 15, 26, 0.6);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 20px;
+    }
+
+    [data-theme="light"] .flow-canvas-wrapper {
+      background: #f1f5f9;
+    }
+
+    /* CONTROLLER GROUPS & ACTIONS */
+    .controllers-container {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .controller-block {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .controller-header {
+      padding: 18px 24px;
+      background: var(--bg-alt);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .controller-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .controller-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .controller-auth-badge {
+      font-size: 12px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 4px;
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .controller-auth-badge.admin {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .controller-auth-badge.public {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .controller-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .action-grid {
+      padding: 20px 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 16px;
+    }
+
+    /* ACTION CARD */
+    .action-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .action-card:hover {
+      border-color: var(--border-focus);
+      background: var(--bg-card-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .action-card.dimmed {
+      opacity: 0.35;
+      filter: grayscale(0.8);
+    }
+
+    .action-card.highlighted {
+      border-color: var(--success);
+      box-shadow: 0 0 12px var(--success-bg);
+    }
+
+    .action-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .action-name-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .action-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      font-family: var(--font-mono);
+    }
+
+    .action-route {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      background: var(--bg-alt);
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: inline-block;
+      width: fit-content;
+    }
+
+    .http-badge {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+    }
+
+    .http-badge.get {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+
+    .http-badge.post {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.4);
+    }
+
+    .action-auth-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .auth-public {
+      background: var(--success-bg);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .auth-all-auth {
+      background: var(--info-bg);
+      color: var(--info);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+    }
+
+    .auth-editorial {
+      background: var(--warning-bg);
+      color: var(--warning);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .auth-admin-only {
+      background: var(--danger-bg);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .auth-ownership {
+      background: rgba(139, 92, 246, 0.15);
+      color: #a78bfa;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+
+    /* ROLE ACCESS MATRIX ROW IN CARD */
+    .role-status-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      background: var(--bg-alt);
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .role-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      text-align: center;
+    }
+
+    .role-col-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .role-indicator {
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .status-allowed {
+      color: var(--success);
+    }
+
+    .status-owned {
+      color: var(--warning);
+    }
+
+    .status-denied {
+      color: var(--danger);
+    }
+
+    .action-repos {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      border-top: 1px dashed var(--border);
+      padding-top: 8px;
+    }
+
+    .action-repos code {
+      color: var(--text-sub);
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .code-toggle-btn {
+      background: transparent;
+      border: none;
+      color: var(--primary);
+      font-size: 12px;
+      cursor: pointer;
+      text-align: left;
+      font-weight: 600;
+      padding: 4px 0 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .code-snippet {
+      display: none;
+      background: #050811;
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #93c5fd;
+      white-space: pre-wrap;
+      overflow-x: auto;
+    }
+
+    .code-snippet.open {
+      display: block;
+    }
+
+    /* FULL MATRIX TABLE */
+    .table-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+    }
+
+    table.matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    table.matrix-table th {
+      background: var(--bg-alt);
+      color: var(--text-muted);
+      padding: 12px 16px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 2px solid var(--border);
+    }
+
+    table.matrix-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    table.matrix-table tr:hover {
+      background: var(--bg-card-hover);
+    }
+
+    .table-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .check-yes {
+      background: var(--success-bg);
+      color: var(--success);
+    }
+
+    .check-guard {
+      background: var(--warning-bg);
+      color: var(--warning);
+    }
+
+    .check-no {
+      background: var(--danger-bg);
+      color: var(--danger);
+    }
+
+    /* FOOTER & LINKS */
+    footer {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-muted);
+      font-size: 13px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 16px;
+    }
+
+    .footer-links a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .footer-links a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 14px;
+      }
+      .action-grid {
+        grid-template-columns: 1fr;
+      }
+      .header-content h1 {
+        font-size: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-content">
+      <h1>🛡️ NewsSphere Role-to-Action Authorization & Flow Matrix</h1>
+      <p>C# / ASP.NET Core MVC • Repository Pattern • Role-Based Access Control (RBAC) • Cookie Authentication</p>
+      <div class="header-badges">
+        <span class="header-badge">🏛️ Layered MVC Architecture</span>
+        <span class="header-badge">📦 4 Distinct User Roles</span>
+        <span class="header-badge">🎮 6 Controllers</span>
+        <span class="header-badge">⚡ 54 Action Methods</span>
+        <span class="header-badge">🔒 4-Tier Security Pipeline</span>
+      </div>
+    </div>
+    <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()">
+      <span id="themeIcon">☀️</span> <span id="themeText">Light Mode</span>
+    </button>
+  </header>
+
+  <!-- SUMMARY STATS GRID -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-title">Anonymous Actions</span>
+      <span class="stat-value" style="color: #10b981;">14</span>
+      <span class="stat-meta">Public browsing, reading, search, login</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-title">Authenticated Reader</span>
+      <span class="stat-value" style="color: #06b6d4;">18</span>
+      <span class="stat-meta">14 Public + 4 Authenticated (Bookmarks & Comments)</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-title">Staff Author Studio</span>
+      <span class="stat-value" style="color: #f59e0b;">27</span>
+      <span class="stat-meta">18 Reader + 9 Editorial (Own Article CRUD)</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-title">Administrator Superuser</span>
+      <span class="stat-value" style="color: #ef4444;">54</span>
+      <span class="stat-meta">100% Platform Access across all endpoints</span>
+    </div>
+  </div>
+
+  <!-- INTERACTIVE ROLE & ACCESS FILTER CONTROLS -->
+  <div class="controls-panel">
+    <div class="role-selector-label">1. Select Target User Role (Simulate Access Perspective):</div>
+    <div class="role-buttons">
+      <button class="role-btn active" data-role="all" onclick="setRole('all')">
+        <span>🌐</span> All Roles (Overview)
+      </button>
+      <button class="role-btn" data-role="anon" onclick="setRole('anon')">
+        <span>👤</span> Anonymous (Guest)
+      </button>
+      <button class="role-btn" data-role="reader" onclick="setRole('reader')">
+        <span>📖</span> Reader Role
+      </button>
+      <button class="role-btn" data-role="author" onclick="setRole('author')">
+        <span>✍️</span> Author Role
+      </button>
+      <button class="role-btn" data-role="admin" onclick="setRole('admin')">
+        <span>👑</span> Administrator Role
+      </button>
+    </div>
+
+    <div class="filter-search-row">
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="all" onclick="setFilter('all')">All Actions (54)</button>
+        <button class="filter-tab" data-filter="public" onclick="setFilter('public')">Public / Anonymous (14)</button>
+        <button class="filter-tab" data-filter="auth" onclick="setFilter('auth')">Any Authenticated (4)</button>
+        <button class="filter-tab" data-filter="editorial" onclick="setFilter('editorial')">Author & Admin (9)</button>
+        <button class="filter-tab" data-filter="admin" onclick="setFilter('admin')">Admin Only (21)</button>
+        <button class="filter-tab" data-filter="ownership" onclick="setFilter('ownership')">Ownership-Guarded (4)</button>
+      </div>
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Search actions, routes, or repos..." oninput="handleSearch()">
+      </div>
+    </div>
+  </div>
+
+  <!-- SVG REQUEST FLOW SWIMLANE -->
+  <div class="flow-diagram-section">
+    <div class="section-header">
+      <h2><span>🔄</span> Role-to-Action Execution & Request Flow Architecture</h2>
+      <span style="font-size: 13px; color: var(--text-muted);" id="flowPerspectiveLabel">Showing all paths across application tiers</span>
+    </div>
+
+    <div class="flow-canvas-wrapper">
+      <svg id="architectureSvg" width="100%" height="340" viewBox="0 0 1200 340" style="display: block; font-family: var(--font);">
+        <defs>
+          <linearGradient id="gradAnon" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#10b981" />
+            <stop offset="100%" stop-color="#059669" />
+          </linearGradient>
+          <linearGradient id="gradReader" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#06b6d4" />
+            <stop offset="100%" stop-color="#0284c7" />
+          </linearGradient>
+          <linearGradient id="gradAuthor" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#f59e0b" />
+            <stop offset="100%" stop-color="#d97706" />
+          </linearGradient>
+          <linearGradient id="gradAdmin" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#ef4444" />
+            <stop offset="100%" stop-color="#b91c1c" />
+          </linearGradient>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        <!-- COLUMNS BACKGROUND -->
+        <rect x="20" y="20" width="180" height="300" rx="10" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.06)" />
+        <rect x="250" y="20" width="190" height="300" rx="10" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.06)" />
+        <rect x="490" y="20" width="220" height="300" rx="10" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.06)" />
+        <rect x="760" y="20" width="200" height="300" rx="10" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.06)" />
+        <rect x="1000" y="20" width="180" height="300" rx="10" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.06)" />
+
+        <!-- TIER HEADERS -->
+        <text x="110" y="42" text-anchor="middle" font-size="12" font-weight="700" fill="#94a3b8">1. USER ROLES</text>
+        <text x="345" y="42" text-anchor="middle" font-size="12" font-weight="700" fill="#94a3b8">2. AUTH MIDDLEWARE</text>
+        <text x="600" y="42" text-anchor="middle" font-size="12" font-weight="700" fill="#94a3b8">3. MVC CONTROLLER & GUARDS</text>
+        <text x="860" y="42" text-anchor="middle" font-size="12" font-weight="700" fill="#94a3b8">4. REPOSITORY / SERVICE</text>
+        <text x="1090" y="42" text-anchor="middle" font-size="12" font-weight="700" fill="#94a3b8">5. PERSISTENCE</text>
+
+        <!-- CONNECTING FLOW PATHS -->
+        <!-- Anonymous Flow -->
+        <path id="pathAnon" d="M 180 75 L 260 75 L 500 75 L 770 75 L 1010 75" fill="none" stroke="#10b981" stroke-width="2.5" stroke-dasharray="4,4" />
+        <!-- Reader Flow -->
+        <path id="pathReader" d="M 180 145 L 260 145 L 500 145 L 770 145 L 1010 145" fill="none" stroke="#06b6d4" stroke-width="2.5" />
+        <!-- Author Flow -->
+        <path id="pathAuthor" d="M 180 215 L 260 215 L 500 215 L 770 215 L 1010 215" fill="none" stroke="#f59e0b" stroke-width="2.5" />
+        <!-- Admin Flow -->
+        <path id="pathAdmin" d="M 180 285 L 260 285 L 500 285 L 770 285 L 1010 285" fill="none" stroke="#ef4444" stroke-width="2.5" />
+
+        <!-- 1. USER ROLE NODES -->
+        <g id="nodeRoleAnon" transform="translate(30, 55)">
+          <rect width="150" height="40" rx="8" fill="url(#gradAnon)" />
+          <text x="75" y="24" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">Anonymous (Guest)</text>
+        </g>
+        <g id="nodeRoleReader" transform="translate(30, 125)">
+          <rect width="150" height="40" rx="8" fill="url(#gradReader)" />
+          <text x="75" y="24" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">Reader Role</text>
+        </g>
+        <g id="nodeRoleAuthor" transform="translate(30, 195)">
+          <rect width="150" height="40" rx="8" fill="url(#gradAuthor)" />
+          <text x="75" y="24" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">Author Role</text>
+        </g>
+        <g id="nodeRoleAdmin" transform="translate(30, 265)">
+          <rect width="150" height="40" rx="8" fill="url(#gradAdmin)" />
+          <text x="75" y="24" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">Administrator</text>
+        </g>
+
+        <!-- 2. AUTH PIPELINE NODES -->
+        <g id="nodeGateAnon" transform="translate(265, 55)">
+          <rect width="160" height="40" rx="8" fill="#1e293b" stroke="#10b981" stroke-width="1.5" />
+          <text x="80" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="#10b981">AllowAnonymous (Pass)</text>
+        </g>
+        <g id="nodeGateCookie" transform="translate(265, 125)">
+          <rect width="160" height="40" rx="8" fill="#1e293b" stroke="#06b6d4" stroke-width="1.5" />
+          <text x="80" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="#06b6d4">Cookie Auth (401)</text>
+        </g>
+        <g id="nodeGateAuthor" transform="translate(265, 195)">
+          <rect width="160" height="40" rx="8" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5" />
+          <text x="80" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="#f59e0b">[Authorize(Admin,Author)]</text>
+        </g>
+        <g id="nodeGateAdmin" transform="translate(265, 265)">
+          <rect width="160" height="40" rx="8" fill="#1e293b" stroke="#ef4444" stroke-width="1.5" />
+          <text x="80" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="#ef4444">[Authorize(Roles="Admin")]</text>
+        </g>
+
+        <!-- 3. CONTROLLER & ACTION NODES -->
+        <g id="nodeCtrlPublic" transform="translate(505, 55)">
+          <rect width="190" height="40" rx="8" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5" />
+          <text x="95" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="#93c5fd">Home / Cat / Author / News</text>
+        </g>
+        <g id="nodeCtrlReader" transform="translate(505, 125)">
+          <rect width="190" height="40" rx="8" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5" />
+          <text x="95" y="20" text-anchor="middle" font-size="11" font-weight="600" fill="#93c5fd">Bookmarks / AddComment</text>
+          <text x="95" y="34" text-anchor="middle" font-size="9" fill="#94a3b8">Guard: Delete own comment</text>
+        </g>
+        <g id="nodeCtrlAuthor" transform="translate(505, 195)">
+          <rect width="190" height="40" rx="8" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5" />
+          <text x="95" y="20" text-anchor="middle" font-size="11" font-weight="600" fill="#93c5fd">Admin Articles & Studio</text>
+          <text x="95" y="34" text-anchor="middle" font-size="9" fill="#f59e0b">Guard: article.Author == User</text>
+        </g>
+        <g id="nodeCtrlAdmin" transform="translate(505, 265)">
+          <rect width="190" height="40" rx="8" fill="#1e293b" stroke="#ef4444" stroke-width="1.5" />
+          <text x="95" y="20" text-anchor="middle" font-size="11" font-weight="600" fill="#fca5a5">Admin Operations Hub</text>
+          <text x="95" y="34" text-anchor="middle" font-size="9" fill="#cbd5e1">Bypasses all ownership checks</text>
+        </g>
+
+        <!-- 4. REPOSITORY / SERVICE NODES -->
+        <g id="nodeRepoPublic" transform="translate(775, 55)">
+          <rect width="170" height="40" rx="8" fill="#1e293b" stroke="#8b5cf6" stroke-width="1.5" />
+          <text x="85" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="#c4b5fd">INewsRepo (AsNoTracking)</text>
+        </g>
+        <g id="nodeRepoReader" transform="translate(775, 125)">
+          <rect width="170" height="40" rx="8" fill="#1e293b" stroke="#8b5cf6" stroke-width="1.5" />
+          <text x="85" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="#c4b5fd">IBookmark / ICommentRepo</text>
+        </g>
+        <g id="nodeRepoAuthor" transform="translate(775, 195)">
+          <rect width="170" height="40" rx="8" fill="#1e293b" stroke="#8b5cf6" stroke-width="1.5" />
+          <text x="85" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="#c4b5fd">INewsRepo / SlugHelper</text>
+        </g>
+        <g id="nodeRepoAdmin" transform="translate(775, 265)">
+          <rect width="170" height="40" rx="8" fill="#1e293b" stroke="#8b5cf6" stroke-width="1.5" />
+          <text x="85" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="#c4b5fd">ILiveNews / UserManager</text>
+        </g>
+
+        <!-- 5. PERSISTENCE LAYER -->
+        <g id="nodeDbPublic" transform="translate(1015, 55)">
+          <rect width="150" height="40" rx="8" fill="#1e293b" stroke="#64748b" stroke-width="1.5" />
+          <text x="75" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="#e2e8f0">AppDbContext (Read)</text>
+        </g>
+        <g id="nodeDbReader" transform="translate(1015, 125)">
+          <rect width="150" height="40" rx="8" fill="#1e293b" stroke="#64748b" stroke-width="1.5" />
+          <text x="75" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="#e2e8f0">Comments / Bookmarks</text>
+        </g>
+        <g id="nodeDbAuthor" transform="translate(1015, 195)">
+          <rect width="150" height="40" rx="8" fill="#1e293b" stroke="#64748b" stroke-width="1.5" />
+          <text x="75" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="#e2e8f0">NewsArticles (Write)</text>
+        </g>
+        <g id="nodeDbAdmin" transform="translate(1015, 265)">
+          <rect width="150" height="40" rx="8" fill="#1e293b" stroke="#64748b" stroke-width="1.5" />
+          <text x="75" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="#e2e8f0">Full DB + Live Sync</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <!-- CONTROLLER CARDS SECTION -->
+  <div class="controllers-container" id="controllersContainer">
+    <!-- Populated dynamically via JS -->
+  </div>
+
+  <!-- FULL PERMISSION MATRIX TABLE -->
+  <div class="table-section">
+    <div class="section-header">
+      <h2><span>📋</span> Complete Role-to-Action Method Matrix Table</h2>
+      <span style="font-size: 13px; color: var(--text-muted);">Side-by-side comparative permission grid</span>
+    </div>
+    <div class="table-responsive">
+      <table class="matrix-table" id="matrixTable">
+        <thead>
+          <tr>
+            <th>Controller</th>
+            <th>Action Method</th>
+            <th>Verb</th>
+            <th>Route Pattern</th>
+            <th>Authorization Guard</th>
+            <th>Anonymous</th>
+            <th>Reader</th>
+            <th>Author</th>
+            <th>Admin</th>
+            <th>Repository / Service Calls</th>
+          </tr>
+        </thead>
+        <tbody id="matrixTableBody">
+          <!-- Populated dynamically via JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div>
+      <strong>NewsSphere Architecture Suite</strong> — Generated for C# ASP.NET Core MVC Application
+    </div>
+    <div class="footer-links">
+      <a href="news-sphere-role-flow.html">Workflow Animation (Archify)</a>
+      <a href="news-sphere-architecture.html">System Architecture</a>
+      <a href="news-sphere-er-diagram.html">ER Data Model</a>
+      <a href="PROJECT_DOCUMENTATION.md">Project Documentation</a>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  // COMPLETE ACTION METHODS DATABASE (54 Endpoints across 6 Controllers)
+  const controllersData = [
+    {
+      name: "HomeController",
+      authDescription: "Implicitly Anonymous / Public",
+      badgeType: "public",
+      dependencies: ["INewsRepository", "ICategoryRepository", "INewsletterRepository"],
+      actions: [
+        {
+          name: "Index",
+          verb: "GET",
+          route: "/",
+          category: "public",
+          authLabel: "Public / Anonymous",
+          anon: "allowed", reader: "allowed", author: "allowed", admin: "allowed",
+          repos: "INewsRepository.GetFeaturedAsync, GetLatestAsync, GetPopularAsync, GetMostDiscussedAsync, GetLiveBreakingNewsAsync; ICategoryRepository.GetCategoriesWithCountAsync",
+          code: `[HttpGet]\npublic async Task<IActionResult> Index()\n{\n    var featured = await _newsRepository.GetFeaturedAsync(3);\n    var latest = await _newsRepository.GetLatestAsync(8);\n    var categoriesWithCount = await _categoryRepository.GetCategoriesWithCountAsync();\n    return View(viewModel);\n}`
+        },
+        {
+          name: "Subscribe",
+          verb: "POST",
+          route: "/home/subscribe",
+          category: "public",
+          authLabel: "Public / Anonymous",
+          anon: "allowed", reader: "allowed", author: "allowed", admin: "allowed",
+          repos: "INewsletterRepository.SubscribeAsync(email)",
+          code: `[HttpPost]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> Subscribe(string email, string? returnUrl)\n{\n    var (success, message) = await _newsletterRepository.SubscribeAsync(email);\n    return RedirectToAction(nameof(Index));\n}`
+        },
+        {
+          name: "About",
+          verb: "GET",
+          route: "/home/about",
+          category: "public",
+          authLabel: "Public / Anonymous",
+          anon: "allowed", reader: "allowed", author: "allowed", admin: "allowed",
+          repos: "None (Static Razor View)",
+          code: `public IActionResult About()\n{\n    ViewData["Title"] = "About Us";\n    return View();\n}`
+        },
+        {
+          name: "Privacy",
+          verb: "GET",
+          route: "/home/privacy",
+          category: "public",
+          authLabel: "Public / Anonymous",
+          anon: "allowed", reader: "allowed", author: "allowed", admin: "allowed",
+          repos: "None (Static Razor View)",
+          code: `public IActionResult Privacy()\n{\n    ViewData["Title"] = "Privacy Policy";\n    return View();\n}`
+        },
+        {
+          name: "Error",
+          verb: "GET",
+          route: "/home/error",
+          category: "public",
+          authLabel: "Public / Anonymous",
+          anon: "allowed", reader: "allowed", author: "allowed", admin: "allowed",
+          repos: "None (Activity.Current request tracing)",
+          code: `[ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]\npublic IActionResult Error(int? statusCode = null)\n{\n    return View(new ErrorViewModel { RequestId = Activity.Current?.Id });\n}`
+        }
+      ]
+    },
+    {
+      name: "CategoryController",
+      authDescription: "Implicitly Anonymous / Public",
+      badgeType: "public",
+      dependencies: ["ICategoryRepository"],
+      actions: [
+        {
+          name: "Index",
+          verb: "GET",
+          route: "/category",
+          category: "public",
+          authLabel: "Public / Anonymous",
+          anon: "allowed", reader: "allowed", author: "allowed", admin: "allowed",
+          repos: "ICategoryRepository.GetCategoriesWithCountAsync()",
+          code: `public async Task<IActionResult> Index()\n{\n    var categoriesWithCount = await _categoryRepository.GetCategoriesWithCountAsync();\n    return View(categoriesWithCount);\n}`
+        },
+        {
+          name: "Details",
+          verb: "GET",
+          route: "/category/details/{slug}",
+          category: "public",
+          authLabel: "Public / Anonymous",
+          anon: "allowed", reader: "allowed", author: "allowed", admin: "allowed",
+          repos: "Redirects to NewsController.Category(slug)",
+          code: `public IActionResult Details(string slug)\n{\n    if (string.IsNullOrWhiteSpace(slug)) return RedirectToAction(nameof(Index));\n    return RedirectToAction("Category", "News", new { slug });\n}`
+        }
+      ]
+    },
+    {
+      name: "AuthorController",
+      authDescription: "Implicitly Anonymous / Public",
+      badgeType: "public",
+      dependencies: ["IAuthorRepository"],
+      actions: [
+        {
+          name: "Index",
+          verb: "GET",
+          route: "/author",
+          category: "public",
+          authLabel: "Public / Anonymous",
+          anon: "allowed", reader: "allowed", author: "allowed", admin: "allowed",
+          repos: "IAuthorRepository.GetAllAsync()",
+          code: `public async Task<IActionResult> Index()\n{\n    var authors = await _authorRepository.GetAllAsync();\n    return View(authors);\n}`
+        },
+        {
+          name: "Details",
+          verb: "GET",
+          route: "/author/details/{id}",
+          category: "public",
+          authLabel: "Public / Anonymous",
+          anon: "allowed", reader: "allowed", author: "allowed", admin: "allowed",
+          repos: "IAuthorRepository.GetByIdAsync(id)",
+          code: `public async Task<IActionResult> Details(int id)\n{\n    var author = await _authorRepository.GetByIdAsync(id);\n    if (author == null) return NotFound();\n    return View(author);\n}`
+        }
+      ]
+    },
+    {
+      name: "AccountController",
+      authDescription: "Mixed: Public Auth & Authenticated Session",
+      badgeType: "public",
+      dependencies: ["UserManager<ApplicationUser>", "SignInManager<ApplicationUser>"],
+      actions: [
+        {
+          name: "Register",
+          verb: "GET",
+          route: "/account/register",
+          category: "public",
+          authLabel: "Public (Redirects if Authed)",
+          anon: "allowed", reader: "denied", author: "denied", admin: "denied",
+          repos: "None (Renders RegisterViewModel)",
+          code: `[HttpGet]\npublic IActionResult Register(string? returnUrl = null)\n{\n    if (User.Identity?.IsAuthenticated == true)\n        return RedirectToAction("Index", "Home");\n    return View(new RegisterViewModel { ReturnUrl = returnUrl });\n}`
+        },
+        {
+          name: "Register",
+          verb: "POST",
+          route: "/account/register",
+          category: "public",
+          authLabel: "Public (Assigns 'Reader' Role)",
+          anon: "allowed", reader: "denied", author: "denied", admin: "denied",
+          repos: "UserManager.CreateAsync, AddToRoleAsync('Reader'); SignInManager.SignInAsync",
+          code: `[HttpPost]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> Register(RegisterViewModel model, string? returnUrl = null)\n{\n    var result = await _userManager.CreateAsync(user, model.Password);\n    if (result.Succeeded) {\n        await _userManager.AddToRoleAsync(user, "Reader");\n        await _signInManager.SignInAsync(user, isPersistent: false);\n        return RedirectToAction("Index", "Home");\n    }\n    return View(model);\n}`
+        },
+        {
+          name: "Login",
+          verb: "GET",
+          route: "/account/login",
+          category: "public",
+          authLabel: "Public (Redirects if Authed)",
+          anon: "allowed", reader: "denied", author: "denied", admin: "denied",
+          repos: "None (Renders LoginViewModel)",
+          code: `[HttpGet]\npublic IActionResult Login(string? returnUrl = null)\n{\n    if (User.Identity?.IsAuthenticated == true)\n        return RedirectToAction("Index", "Home");\n    return View(new LoginViewModel { ReturnUrl = returnUrl });\n}`
+        },
+        {
+          name: "Login",
+          verb: "POST",
+          route: "/account/login",
+          category: "public",
+          authLabel: "Public (Establishes Session)",
+          anon: "allowed", reader: "denied", author: "denied", admin: "denied",
+          repos: "SignInManager.PasswordSignInAsync(email, password, rememberMe)",
+          code: `[HttpPost]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null)\n{\n    var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, false);\n    if (result.Succeeded) return RedirectToAction("Index", "Home");\n    return View(model);\n}`
+        },
+        {
+          name: "Logout",
+          verb: "POST",
+          route: "/account/logout",
+          category: "auth",
+          authLabel: "Authenticated Users",
+          anon: "denied", reader: "allowed", author: "allowed", admin: "allowed",
+          repos: "SignInManager.SignOutAsync()",
+          code: `[HttpPost]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> Logout()\n{\n    await _signInManager.SignOutAsync();\n    return RedirectToAction("Index", "Home");\n}`
+        },
+        {
+          name: "AccessDenied",
+          verb: "GET",
+          route: "/account/accessdenied",
+          category: "public",
+          authLabel: "Public (403 Target)",
+          anon: "allowed", reader: "allowed", author: "allowed", admin: "allowed",
+          repos: "None (AccessDenied View)",
+          code: `[HttpGet]\npublic IActionResult AccessDenied()\n{\n    return View();\n}`
+        }
+      ]
+    },
+    {
+      name: "NewsController",
+      authDescription: "Mixed: Public Reading & [Authorize] Reader Interactions",
+      badgeType: "public",
+      dependencies: ["INewsRepository", "ICategoryRepository", "ICommentRepository", "IBookmarkRepository", "UserManager<ApplicationUser>"],
+      actions: [
+        {
+          name: "Index",
+          verb: "GET",
+          route: "/news",
+          category: "public",
+          authLabel: "Public / Anonymous",
+          anon: "allowed", reader: "allowed", author: "allowed", admin: "allowed",
+          repos: "INewsRepository.GetPagedPublishedAsync; ICategoryRepository.GetAllAsync",
+          code: `public async Task<IActionResult> Index(string? search, int? categoryId, string? sortBy, string? sourceType, string? timeRange, int page = 1)\n{\n    var (articles, totalCount) = await _newsRepository.GetPagedPublishedAsync(search, categoryId, sortBy, page, pageSize, sourceType, timeRange);\n    return View(viewModel);\n}`
+        },
+        {
+          name: "Category",
+          verb: "GET",
+          route: "/news/category/{slug}",
+          category: "public",
+          authLabel: "Public / Anonymous",
+          anon: "allowed", reader: "allowed", author: "allowed", admin: "allowed",
+          repos: "ICategoryRepository.GetBySlugAsync; INewsRepository.GetPagedPublishedAsync",
+          code: `public async Task<IActionResult> Category(string slug, string? sortBy, string? sourceType, string? timeRange, int page = 1)\n{\n    var category = await _categoryRepository.GetBySlugAsync(slug);\n    if (category == null) return NotFound();\n    var (articles, totalCount) = await _newsRepository.GetPagedPublishedAsync(null, category.Id, sortBy, page, pageSize);\n    return View(nameof(Index), viewModel);\n}`
+        },
+        {
+          name: "Details",
+          verb: "GET",
+          route: "/news/details/{slug}",
+          category: "public",
+          authLabel: "Public (Optional Auth Check)",
+          anon: "allowed", reader: "allowed", author: "allowed", admin: "allowed",
+          repos: "INewsRepository.GetBySlugAsync, IncrementViewCountAsync, GetRelatedAsync; IBookmarkRepository.IsBookmarkedAsync",
+          code: `public async Task<IActionResult> Details(string slug)\n{\n    var article = await _newsRepository.GetBySlugAsync(slug);\n    if (article == null || !article.IsPublished) return NotFound();\n    await _newsRepository.IncrementViewCountAsync(article.Id);\n    var userId = _userManager.GetUserId(User);\n    if (!string.IsNullOrEmpty(userId))\n        isBookmarked = await _bookmarkRepository.IsBookmarkedAsync(userId, article.Id);\n    return View(viewModel);\n}`
+        },
+        {
+          name: "DetailsById",
+          verb: "GET",
+          route: "/news/detailsbyid/{id}",
+          category: "public",
+          authLabel: "Public (Fallback Redirect)",
+          anon: "allowed", reader: "allowed", author: "allowed", admin: "allowed",
+          repos: "INewsRepository.GetByIdAsync(id)",
+          code: `public async Task<IActionResult> DetailsById(int id)\n{\n    var article = await _newsRepository.GetByIdAsync(id);\n    if (article == null || !article.IsPublished) return NotFound();\n    return RedirectToAction(nameof(Details), new { slug = article.Slug });\n}`
+        },
+        {
+          name: "Like",
+          verb: "POST",
+          route: "/news/like/{id}",
+          category: "public",
+          authLabel: "Public / Anonymous",
+          anon: "allowed", reader: "allowed", author: "allowed", admin: "allowed",
+          repos: "INewsRepository.IncrementLikeCountAsync(id), GetByIdAsync(id)",
+          code: `[HttpPost]\npublic async Task<IActionResult> Like(int id, string? returnUrl)\n{\n    await _newsRepository.IncrementLikeCountAsync(id);\n    return Json(new { success = true, likes = article?.LikeCount ?? 0 });\n}`
+        },
+        {
+          name: "ToggleBookmark",
+          verb: "POST",
+          route: "/news/togglebookmark/{id}",
+          category: "auth",
+          authLabel: "[Authorize] Authenticated",
+          anon: "denied", reader: "allowed", author: "allowed", admin: "allowed",
+          repos: "IBookmarkRepository.ToggleBookmarkAsync(userId, id); INewsRepository.GetByIdAsync",
+          code: `[HttpPost]\n[Authorize]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> ToggleBookmark(int id, string? returnUrl)\n{\n    var userId = _userManager.GetUserId(User);\n    if (string.IsNullOrEmpty(userId)) return Challenge();\n    bool isBookmarked = await _bookmarkRepository.ToggleBookmarkAsync(userId, id);\n    return Json(new { success = true, isBookmarked });\n}`
+        },
+        {
+          name: "Bookmarks",
+          verb: "GET",
+          route: "/news/bookmarks",
+          category: "auth",
+          authLabel: "[Authorize] Authenticated",
+          anon: "denied", reader: "allowed", author: "allowed", admin: "allowed",
+          repos: "IBookmarkRepository.GetUserBookmarksAsync(userId), GetUserBookmarkCountAsync(userId)",
+          code: `[Authorize]\npublic async Task<IActionResult> Bookmarks()\n{\n    var userId = _userManager.GetUserId(User);\n    var articles = await _bookmarkRepository.GetUserBookmarksAsync(userId);\n    return View(viewModel);\n}`
+        },
+        {
+          name: "AddComment",
+          verb: "POST",
+          route: "/news/addcomment",
+          category: "auth",
+          authLabel: "[Authorize] Authenticated",
+          anon: "denied", reader: "allowed", author: "allowed", admin: "allowed",
+          repos: "ICommentRepository.AddAsync(comment)",
+          code: `[HttpPost]\n[Authorize]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> AddComment(AddCommentViewModel model)\n{\n    var currentUserId = _userManager.GetUserId(User);\n    var comment = new Comment { NewsArticleId = articleId, UserId = currentUserId, Content = content };\n    await _commentRepository.AddAsync(comment);\n    return RedirectToAction(nameof(Details), new { slug });\n}`
+        },
+        {
+          name: "DeleteComment",
+          verb: "POST",
+          route: "/news/deletecomment/{id}",
+          category: "ownership",
+          authLabel: "[Authorize] + Owner OR Admin",
+          anon: "denied", reader: "owned", author: "owned", admin: "allowed",
+          repos: "ICommentRepository.GetByIdAsync(id), DeleteAsync(id)",
+          code: `[HttpPost]\n[Authorize]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> DeleteComment(int id, string slug)\n{\n    var comment = await _commentRepository.GetByIdAsync(id);\n    var currentUserId = _userManager.GetUserId(User);\n    var isAdmin = User.IsInRole("Admin");\n    // Ownership Guard: Owner OR Admin\n    if (comment.UserId != currentUserId && !isAdmin)\n        return Forbid();\n    await _commentRepository.DeleteAsync(id);\n    return RedirectToAction(nameof(Details), new { slug });\n}`
+        }
+      ]
+    },
+    {
+      name: "AdminController",
+      authDescription: "[Authorize(Roles = \"Admin,Author\")] with Method-Level Admin Restrictions",
+      badgeType: "admin",
+      dependencies: ["INewsRepository", "ICategoryRepository", "ICommentRepository", "IAuthorRepository", "INewsFeedSourceRepository", "INewsletterRepository", "UserManager<ApplicationUser>", "ILiveNewsService", "IConfiguration"],
+      actions: [
+        {
+          name: "Index",
+          verb: "GET",
+          route: "/admin",
+          category: "editorial",
+          authLabel: "[Authorize(Roles='Admin,Author')]",
+          anon: "denied", reader: "denied", author: "allowed", admin: "allowed",
+          repos: "INewsRepository, ICategoryRepository, ICommentRepository, INewsletterRepository, INewsFeedSourceRepository, UserManager.Users.CountAsync",
+          code: `[Authorize(Roles = "Admin,Author")]\npublic async Task<IActionResult> Index()\n{\n    var totalArticles = await _newsRepository.GetTotalCountAsync();\n    var totalComments = await _commentRepository.GetTotalCountAsync();\n    var totalUsers = await _userManager.Users.CountAsync();\n    return View(viewModel);\n}`
+        },
+        {
+          name: "Articles",
+          verb: "GET",
+          route: "/admin/articles",
+          category: "editorial",
+          authLabel: "[Authorize(Roles='Admin,Author')]",
+          anon: "denied", reader: "denied", author: "owned", admin: "allowed",
+          repos: "INewsRepository.GetPagedAdminAsync(..., authorFilterUserId: isAdmin ? null : currentUserId)",
+          code: `public async Task<IActionResult> Articles(int page = 1, ...)\n{\n    var currentUserId = _userManager.GetUserId(User);\n    var isAdmin = User.IsInRole("Admin");\n    // If user is Author only, restrict query to own articles\n    string? authorFilterUserId = isAdmin ? null : currentUserId;\n    var (articles, totalCount) = await _newsRepository.GetPagedAdminAsync(..., authorFilterUserId);\n    return View(articles);\n}`
+        },
+        {
+          name: "CreateArticle",
+          verb: "GET",
+          route: "/admin/createarticle",
+          category: "editorial",
+          authLabel: "[Authorize(Roles='Admin,Author')]",
+          anon: "denied", reader: "denied", author: "allowed", admin: "allowed",
+          repos: "ICategoryRepository.GetAllAsync()",
+          code: `[HttpGet]\npublic async Task<IActionResult> CreateArticle()\n{\n    var categories = await _categoryRepository.GetAllAsync();\n    return View(viewModel);\n}`
+        },
+        {
+          name: "CreateArticle",
+          verb: "POST",
+          route: "/admin/createarticle",
+          category: "editorial",
+          authLabel: "[Authorize(Roles='Admin,Author')]",
+          anon: "denied", reader: "denied", author: "allowed", admin: "allowed",
+          repos: "IAuthorRepository.GetByUserIdAsync, AddAsync; INewsRepository.SlugExistsAsync, AddAsync",
+          code: `[HttpPost]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> CreateArticle(CreateNewsViewModel model)\n{\n    var currentUserId = _userManager.GetUserId(User);\n    var author = await _authorRepository.GetByUserIdAsync(currentUserId);\n    var article = new NewsArticle {\n        AuthorId = author.Id,\n        IsFeatured = User.IsInRole("Admin") && model.IsFeatured\n    };\n    await _newsRepository.AddAsync(article);\n    return RedirectToAction(nameof(Articles));\n}`
+        },
+        {
+          name: "EditArticle",
+          verb: "GET",
+          route: "/admin/editarticle/{id}",
+          category: "ownership",
+          authLabel: "Editorial + Ownership Guard",
+          anon: "denied", reader: "denied", author: "owned", admin: "allowed",
+          repos: "INewsRepository.GetByIdAsync(id); ICategoryRepository.GetAllAsync()",
+          code: `[HttpGet]\npublic async Task<IActionResult> EditArticle(int id)\n{\n    var article = await _newsRepository.GetByIdAsync(id);\n    // Ownership Guard\n    if (!User.IsInRole("Admin") && article.Author?.UserId != currentUserId)\n        return Forbid();\n    return View(viewModel);\n}`
+        },
+        {
+          name: "EditArticle",
+          verb: "POST",
+          route: "/admin/editarticle/{id}",
+          category: "ownership",
+          authLabel: "Editorial + Ownership Guard",
+          anon: "denied", reader: "denied", author: "owned", admin: "allowed",
+          repos: "INewsRepository.GetByIdAsync, SlugExistsAsync, UpdateAsync",
+          code: `[HttpPost]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> EditArticle(int id, EditNewsViewModel model)\n{\n    var article = await _newsRepository.GetByIdAsync(id);\n    if (!User.IsInRole("Admin") && article.Author?.UserId != currentUserId)\n        return Forbid();\n    if (User.IsInRole("Admin")) article.IsFeatured = model.IsFeatured;\n    await _newsRepository.UpdateAsync(article);\n    return RedirectToAction(nameof(Articles));\n}`
+        },
+        {
+          name: "DeleteArticle",
+          verb: "GET",
+          route: "/admin/deletearticle/{id}",
+          category: "ownership",
+          authLabel: "Editorial + Ownership Guard",
+          anon: "denied", reader: "denied", author: "owned", admin: "allowed",
+          repos: "INewsRepository.GetByIdAsync(id)",
+          code: `[HttpGet]\npublic async Task<IActionResult> DeleteArticle(int id)\n{\n    var article = await _newsRepository.GetByIdAsync(id);\n    if (!User.IsInRole("Admin") && article.Author?.UserId != currentUserId)\n        return Forbid();\n    return View(article);\n}`
+        },
+        {
+          name: "DeleteArticle",
+          verb: "POST",
+          route: "/admin/deletearticle/{id}",
+          category: "ownership",
+          authLabel: "Editorial + Ownership Guard",
+          anon: "denied", reader: "denied", author: "owned", admin: "allowed",
+          repos: "INewsRepository.GetByIdAsync(id), DeleteAsync(id)",
+          code: `[HttpPost, ActionName("DeleteArticle")]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> DeleteArticleConfirmed(int id)\n{\n    var article = await _newsRepository.GetByIdAsync(id);\n    if (!User.IsInRole("Admin") && article.Author?.UserId != currentUserId)\n        return Forbid();\n    await _newsRepository.DeleteAsync(id);\n    return RedirectToAction(nameof(Articles));\n}`
+        },
+        {
+          name: "TogglePublish",
+          verb: "POST",
+          route: "/admin/togglepublish/{id}",
+          category: "ownership",
+          authLabel: "Editorial + Ownership Guard",
+          anon: "denied", reader: "denied", author: "owned", admin: "allowed",
+          repos: "INewsRepository.GetByIdAsync(id), UpdateAsync",
+          code: `[HttpPost]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> TogglePublish(int id)\n{\n    var article = await _newsRepository.GetByIdAsync(id);\n    if (!User.IsInRole("Admin") && article.Author?.UserId != currentUserId)\n        return Forbid();\n    article.IsPublished = !article.IsPublished;\n    await _newsRepository.UpdateAsync(article);\n    return RedirectToAction(nameof(Articles));\n}`
+        },
+        {
+          name: "ToggleFeatured",
+          verb: "POST",
+          route: "/admin/togglefeatured/{id}",
+          category: "admin",
+          authLabel: "[Authorize(Roles = 'Admin')]",
+          anon: "denied", reader: "denied", author: "denied", admin: "allowed",
+          repos: "INewsRepository.GetByIdAsync(id), UpdateAsync",
+          code: `[HttpPost]\n[Authorize(Roles = "Admin")]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> ToggleFeatured(int id)\n{\n    var article = await _newsRepository.GetByIdAsync(id);\n    article.IsFeatured = !article.IsFeatured;\n    await _newsRepository.UpdateAsync(article);\n    return RedirectToAction(nameof(Articles));\n}`
+        },
+        {
+          name: "Categories",
+          verb: "GET",
+          route: "/admin/categories",
+          category: "admin",
+          authLabel: "[Authorize(Roles = 'Admin')]",
+          anon: "denied", reader: "denied", author: "denied", admin: "allowed",
+          repos: "ICategoryRepository.GetCategoriesWithCountAsync()",
+          code: `[Authorize(Roles = "Admin")]\npublic async Task<IActionResult> Categories()\n{\n    var categories = await _categoryRepository.GetCategoriesWithCountAsync();\n    return View(categories);\n}`
+        },
+        {
+          name: "CreateCategory",
+          verb: "GET",
+          route: "/admin/createcategory",
+          category: "admin",
+          authLabel: "[Authorize(Roles = 'Admin')]",
+          anon: "denied", reader: "denied", author: "denied", admin: "allowed",
+          repos: "None (Renders CategoryViewModel)",
+          code: `[HttpGet]\n[Authorize(Roles = "Admin")]\npublic IActionResult CreateCategory()\n{\n    return View(new CategoryViewModel());\n}`
+        },
+        {
+          name: "CreateCategory",
+          verb: "POST",
+          route: "/admin/createcategory",
+          category: "admin",
+          authLabel: "[Authorize(Roles = 'Admin')]",
+          anon: "denied", reader: "denied", author: "denied", admin: "allowed",
+          repos: "ICategoryRepository.SlugExistsAsync, AddAsync",
+          code: `[HttpPost]\n[Authorize(Roles = "Admin")]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> CreateCategory(CategoryViewModel model)\n{\n    var category = new Category { Name = model.Name.Trim(), Slug = cleanSlug };\n    await _categoryRepository.AddAsync(category);\n    return RedirectToAction(nameof(Categories));\n}`
+        },
+        {
+          name: "EditCategory",
+          verb: "GET",
+          route: "/admin/editcategory/{id}",
+          category: "admin",
+          authLabel: "[Authorize(Roles = 'Admin')]",
+          anon: "denied", reader: "denied", author: "denied", admin: "allowed",
+          repos: "ICategoryRepository.GetByIdAsync(id)",
+          code: `[HttpGet]\n[Authorize(Roles = "Admin")]\npublic async Task<IActionResult> EditCategory(int id)\n{\n    var category = await _categoryRepository.GetByIdAsync(id);\n    return View(viewModel);\n}`
+        },
+        {
+          name: "EditCategory",
+          verb: "POST",
+          route: "/admin/editcategory/{id}",
+          category: "admin",
+          authLabel: "[Authorize(Roles = 'Admin')]",
+          anon: "denied", reader: "denied", author: "denied", admin: "allowed",
+          repos: "ICategoryRepository.GetByIdAsync, SlugExistsAsync, UpdateAsync",
+          code: `[HttpPost]\n[Authorize(Roles = "Admin")]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> EditCategory(int id, CategoryViewModel model)\n{\n    var category = await _categoryRepository.GetByIdAsync(id);\n    category.Name = model.Name.Trim();\n    await _categoryRepository.UpdateAsync(category);\n    return RedirectToAction(nameof(Categories));\n}`
+        },
+        {
+          name: "DeleteCategory",
+          verb: "POST",
+          route: "/admin/deletecategory/{id}",
+          category: "admin",
+          authLabel: "[Authorize(Roles = 'Admin')]",
+          anon: "denied", reader: "denied", author: "denied", admin: "allowed",
+          repos: "ICategoryRepository.GetByIdAsync(id), DeleteAsync(id)",
+          code: `[HttpPost]\n[Authorize(Roles = "Admin")]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> DeleteCategory(int id)\n{\n    var category = await _categoryRepository.GetByIdAsync(id);\n    if (category.NewsArticles.Any()) return RedirectToAction(nameof(Categories)); // Safe delete\n    await _categoryRepository.DeleteAsync(id);\n    return RedirectToAction(nameof(Categories));\n}`
+        },
+        {
+          name: "Comments",
+          verb: "GET",
+          route: "/admin/comments",
+          category: "admin",
+          authLabel: "[Authorize(Roles = 'Admin')]",
+          anon: "denied", reader: "denied", author: "denied", admin: "allowed",
+          repos: "ICommentRepository.GetAllAsync()",
+          code: `[Authorize(Roles = "Admin")]\npublic async Task<IActionResult> Comments()\n{\n    var comments = await _commentRepository.GetAllAsync();\n    return View(comments);\n}`
+        },
+        {
+          name: "DeleteComment",
+          verb: "POST",
+          route: "/admin/deletecomment/{id}",
+          category: "admin",
+          authLabel: "[Authorize(Roles = 'Admin')]",
+          anon: "denied", reader: "denied", author: "denied", admin: "allowed",
+          repos: "ICommentRepository.GetByIdAsync(id), DeleteAsync(id)",
+          code: `[HttpPost]\n[Authorize(Roles = "Admin")]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> DeleteComment(int id)\n{\n    await _commentRepository.DeleteAsync(id);\n    return RedirectToAction(nameof(Comments));\n}`
+        },
+        {
+          name: "Users",
+          verb: "GET",
+          route: "/admin/users",
+          category: "admin",
+          authLabel: "[Authorize(Roles = 'Admin')]",
+          anon: "denied", reader: "denied", author: "denied", admin: "allowed",
+          repos: "UserManager.Users.ToListAsync(), UserManager.GetRolesAsync(user)",
+          code: `[Authorize(Roles = "Admin")]\npublic async Task<IActionResult> Users()\n{\n    var users = await _userManager.Users.ToListAsync();\n    foreach(var user in users) {\n        var roles = await _userManager.GetRolesAsync(user);\n    }\n    return View(userRoleList);\n}`
+        },
+        {
+          name: "LiveNews",
+          verb: "GET",
+          route: "/admin/livenews",
+          category: "admin",
+          authLabel: "[Authorize(Roles = 'Admin')]",
+          anon: "denied", reader: "denied", author: "denied", admin: "allowed",
+          repos: "ILiveNewsService.GetConfiguredFeedSources; INewsFeedSourceRepository.GetAllAsync; INewsRepository.GetLiveSyncedCountAsync",
+          code: `[Authorize(Roles = "Admin")]\npublic async Task<IActionResult> LiveNews()\n{\n    var staticFeedSources = _liveNewsService.GetConfiguredFeedSources();\n    var customFeedSources = await _feedSourceRepository.GetAllAsync();\n    return View(viewModel);\n}`
+        },
+        {
+          name: "SyncLiveNews",
+          verb: "POST",
+          route: "/admin/synclivenews",
+          category: "admin",
+          authLabel: "[Authorize(Roles = 'Admin')]",
+          anon: "denied", reader: "denied", author: "denied", admin: "allowed",
+          repos: "ILiveNewsService.SyncAllFeedsAsync()",
+          code: `[HttpPost]\n[Authorize(Roles = "Admin")]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> SyncLiveNews()\n{\n    var result = await _liveNewsService.SyncAllFeedsAsync();\n    return RedirectToAction(nameof(LiveNews));\n}`
+        },
+        {
+          name: "SyncHackerNews",
+          verb: "POST",
+          route: "/admin/synchackernews",
+          category: "admin",
+          authLabel: "[Authorize(Roles = 'Admin')]",
+          anon: "denied", reader: "denied", author: "denied", admin: "allowed",
+          repos: "ILiveNewsService.SyncHackerNewsAsync()",
+          code: `[HttpPost]\n[Authorize(Roles = "Admin")]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> SyncHackerNews()\n{\n    var result = await _liveNewsService.SyncHackerNewsAsync();\n    return RedirectToAction(nameof(LiveNews));\n}`
+        },
+        {
+          name: "SyncGNews",
+          verb: "POST",
+          route: "/admin/syncgnews",
+          category: "admin",
+          authLabel: "[Authorize(Roles = 'Admin')]",
+          anon: "denied", reader: "denied", author: "denied", admin: "allowed",
+          repos: "ILiveNewsService.SyncFromGNewsApiAsync(null, category)",
+          code: `[HttpPost]\n[Authorize(Roles = "Admin")]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> SyncGNews(string? category)\n{\n    var result = await _liveNewsService.SyncFromGNewsApiAsync(null, category);\n    return RedirectToAction(nameof(LiveNews));\n}`
+        },
+        {
+          name: "SyncSpecificFeed",
+          verb: "POST",
+          route: "/admin/syncspecificfeed",
+          category: "admin",
+          authLabel: "[Authorize(Roles = 'Admin')]",
+          anon: "denied", reader: "denied", author: "denied", admin: "allowed",
+          repos: "ILiveNewsService.SyncFeedAsync(feedUrl, categorySlug, sourceName)",
+          code: `[HttpPost]\n[Authorize(Roles = "Admin")]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> SyncSpecificFeed(string feedUrl, string categorySlug, string sourceName)\n{\n    var result = await _liveNewsService.SyncFeedAsync(feedUrl, categorySlug, sourceName);\n    return RedirectToAction(nameof(LiveNews));\n}`
+        },
+        {
+          name: "SyncCustomFeed",
+          verb: "POST",
+          route: "/admin/synccustomfeed",
+          category: "admin",
+          authLabel: "[Authorize(Roles = 'Admin')]",
+          anon: "denied", reader: "denied", author: "denied", admin: "allowed",
+          repos: "ILiveNewsService.SyncCustomSourceAsync(id)",
+          code: `[HttpPost]\n[Authorize(Roles = "Admin")]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> SyncCustomFeed(int id)\n{\n    var result = await _liveNewsService.SyncCustomSourceAsync(id);\n    return RedirectToAction(nameof(LiveNews));\n}`
+        },
+        {
+          name: "AddFeedSource",
+          verb: "POST",
+          route: "/admin/addfeedsource",
+          category: "admin",
+          authLabel: "[Authorize(Roles = 'Admin')]",
+          anon: "denied", reader: "denied", author: "denied", admin: "allowed",
+          repos: "INewsFeedSourceRepository.GetByUrlAsync, AddAsync",
+          code: `[HttpPost]\n[Authorize(Roles = "Admin")]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> AddFeedSource(string name, string feedUrl, string categorySlug, string? defaultImageUrl)\n{\n    await _feedSourceRepository.AddAsync(source);\n    return RedirectToAction(nameof(LiveNews));\n}`
+        },
+        {
+          name: "ToggleFeedSource",
+          verb: "POST",
+          route: "/admin/togglefeedsource",
+          category: "admin",
+          authLabel: "[Authorize(Roles = 'Admin')]",
+          anon: "denied", reader: "denied", author: "denied", admin: "allowed",
+          repos: "INewsFeedSourceRepository.ToggleActiveAsync(id)",
+          code: `[HttpPost]\n[Authorize(Roles = "Admin")]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> ToggleFeedSource(int id)\n{\n    await _feedSourceRepository.ToggleActiveAsync(id);\n    return RedirectToAction(nameof(LiveNews));\n}`
+        },
+        {
+          name: "DeleteFeedSource",
+          verb: "POST",
+          route: "/admin/deletefeedsource",
+          category: "admin",
+          authLabel: "[Authorize(Roles = 'Admin')]",
+          anon: "denied", reader: "denied", author: "denied", admin: "allowed",
+          repos: "INewsFeedSourceRepository.DeleteAsync(id)",
+          code: `[HttpPost]\n[Authorize(Roles = "Admin")]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> DeleteFeedSource(int id)\n{\n    await _feedSourceRepository.DeleteAsync(id);\n    return RedirectToAction(nameof(LiveNews));\n}`
+        },
+        {
+          name: "Subscribers",
+          verb: "GET",
+          route: "/admin/subscribers",
+          category: "admin",
+          authLabel: "[Authorize(Roles = 'Admin')]",
+          anon: "denied", reader: "denied", author: "denied", admin: "allowed",
+          repos: "INewsletterRepository.GetAllSubscribersAsync()",
+          code: `[Authorize(Roles = "Admin")]\npublic async Task<IActionResult> Subscribers()\n{\n    var subscribers = await _newsletterRepository.GetAllSubscribersAsync();\n    return View(subscribers);\n}`
+        },
+        {
+          name: "DeleteSubscriber",
+          verb: "POST",
+          route: "/admin/deletesubscriber",
+          category: "admin",
+          authLabel: "[Authorize(Roles = 'Admin')]",
+          anon: "denied", reader: "denied", author: "denied", admin: "allowed",
+          repos: "INewsletterRepository.DeleteAsync(id)",
+          code: `[HttpPost]\n[Authorize(Roles = "Admin")]\n[ValidateAntiForgeryToken]\npublic async Task<IActionResult> DeleteSubscriber(int id)\n{\n    await _newsletterRepository.DeleteAsync(id);\n    return RedirectToAction(nameof(Subscribers));\n}`
+        }
+      ]
+    }
+  ];
+
+  let currentRole = "all";
+  let currentFilter = "all";
+  let searchQuery = "";
+
+  // Render Controller Blocks & Action Cards
+  function renderControllers() {
+    const container = document.getElementById("controllersContainer");
+    container.innerHTML = "";
+
+    controllersData.forEach((ctrl, ctrlIdx) => {
+      // Filter actions based on role, filter tab, and search query
+      const filteredActions = ctrl.actions.filter(act => {
+        // Role check
+        if (currentRole === "anon" && act.anon === "denied") return false;
+        if (currentRole === "reader" && act.reader === "denied") return false;
+        if (currentRole === "author" && act.author === "denied") return false;
+        if (currentRole === "admin" && act.admin === "denied") return false;
+
+        // Category filter
+        if (currentFilter === "public" && act.category !== "public") return false;
+        if (currentFilter === "auth" && act.category !== "auth") return false;
+        if (currentFilter === "editorial" && act.category !== "editorial") return false;
+        if (currentFilter === "admin" && act.category !== "admin") return false;
+        if (currentFilter === "ownership" && act.category !== "ownership") return false;
+
+        // Search query
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          const matchName = act.name.toLowerCase().includes(q);
+          const matchRoute = act.route.toLowerCase().includes(q);
+          const matchRepo = act.repos.toLowerCase().includes(q);
+          const matchCtrl = ctrl.name.toLowerCase().includes(q);
+          if (!matchName && !matchRoute && !matchRepo && !matchCtrl) return false;
+        }
+
+        return true;
+      });
+
+      if (filteredActions.length === 0 && (currentFilter !== "all" || searchQuery !== "" || currentRole !== "all")) {
+        return; // Skip empty controllers in filtered view
+      }
+
+      const ctrlBlock = document.createElement("div");
+      ctrlBlock.className = "controller-block";
+      ctrlBlock.id = `ctrl-${ctrlIdx}`;
+
+      let authBadgeClass = "controller-auth-badge";
+      if (ctrl.badgeType === "admin") authBadgeClass += " admin";
+      else if (ctrl.badgeType === "public") authBadgeClass += " public";
+
+      ctrlBlock.innerHTML = `
+        <div class="controller-header" onclick="toggleCollapse(${ctrlIdx})">
+          <div class="controller-title-wrap">
+            <span class="controller-title">🎮 ${ctrl.name}</span>
+            <span class="${authBadgeClass}">${ctrl.authDescription}</span>
+          </div>
+          <div class="controller-meta">
+            <span>Dependencies: ${ctrl.dependencies.length} injected</span>
+            <span><strong>${filteredActions.length}</strong> actions</span>
+            <span id="chevron-${ctrlIdx}">▼</span>
+          </div>
+        </div>
+        <div class="action-grid" id="grid-${ctrlIdx}">
+          ${filteredActions.map((act, actIdx) => createActionCard(act, ctrl.name, `${ctrlIdx}-${actIdx}`)).join("")}
+        </div>
+      `;
+
+      container.appendChild(ctrlBlock);
+    });
+  }
+
+  function createActionCard(act, ctrlName, uniqueId) {
+    let authPillClass = "action-auth-pill ";
+    if (act.category === "public") authPillClass += "auth-public";
+    else if (act.category === "auth") authPillClass += "auth-all-auth";
+    else if (act.category === "editorial") authPillClass += "auth-editorial";
+    else if (act.category === "admin") authPillClass += "auth-admin-only";
+    else if (act.category === "ownership") authPillClass += "auth-ownership";
+
+    let httpClass = act.verb.toLowerCase() === "get" ? "http-badge get" : "http-badge post";
+
+    // Format role indicators
+    const getRoleHtml = (status, roleLabel) => {
+      if (status === "allowed") return `<span class="role-indicator status-allowed">✓ OK</span>`;
+      if (status === "owned") return `<span class="role-indicator status-owned">🔒 Own</span>`;
+      return `<span class="role-indicator status-denied">⛔ 403</span>`;
+    };
+
+    return `
+      <div class="action-card" id="card-${uniqueId}">
+        <div class="action-top">
+          <div class="action-name-wrap">
+            <span class="action-name">${act.name}()</span>
+            <span class="action-route">${act.route}</span>
+          </div>
+          <span class="${httpClass}">${act.verb}</span>
+        </div>
+
+        <div>
+          <span class="${authPillClass}">${act.authLabel}</span>
+        </div>
+
+        <div class="role-status-row">
+          <div class="role-col">
+            <span class="role-col-title">Guest</span>
+            ${getRoleHtml(act.anon, "Guest")}
+          </div>
+          <div class="role-col">
+            <span class="role-col-title">Reader</span>
+            ${getRoleHtml(act.reader, "Reader")}
+          </div>
+          <div class="role-col">
+            <span class="role-col-title">Author</span>
+            ${getRoleHtml(act.author, "Author")}
+          </div>
+          <div class="role-col">
+            <span class="role-col-title">Admin</span>
+            ${getRoleHtml(act.admin, "Admin")}
+          </div>
+        </div>
+
+        <div class="action-repos">
+          <strong>Service/Repository Calls:</strong>
+          <code>${act.repos}</code>
+        </div>
+
+        <button class="code-toggle-btn" onclick="toggleCode('${uniqueId}')">
+          <span>&lt;/&gt;</span> View Implementation Snippet
+        </button>
+        <pre class="code-snippet" id="code-${uniqueId}">${act.code}</pre>
+      </div>
+    `;
+  }
+
+  // Populate Matrix Table
+  function renderMatrixTable() {
+    const tbody = document.getElementById("matrixTableBody");
+    tbody.innerHTML = "";
+
+    controllersData.forEach(ctrl => {
+      ctrl.actions.forEach(act => {
+        // Filter logic for table
+        if (currentRole === "anon" && act.anon === "denied") return;
+        if (currentRole === "reader" && act.reader === "denied") return;
+        if (currentRole === "author" && act.author === "denied") return;
+        if (currentRole === "admin" && act.admin === "denied") return;
+
+        if (currentFilter === "public" && act.category !== "public") return;
+        if (currentFilter === "auth" && act.category !== "auth") return;
+        if (currentFilter === "editorial" && act.category !== "editorial") return;
+        if (currentFilter === "admin" && act.category !== "admin") return;
+        if (currentFilter === "ownership" && act.category !== "ownership") return;
+
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          const matchName = act.name.toLowerCase().includes(q);
+          const matchRoute = act.route.toLowerCase().includes(q);
+          const matchRepo = act.repos.toLowerCase().includes(q);
+          const matchCtrl = ctrl.name.toLowerCase().includes(q);
+          if (!matchName && !matchRoute && !matchRepo && !matchCtrl) return;
+        }
+
+        const tr = document.createElement("tr");
+
+        const getTableBadge = (status) => {
+          if (status === "allowed") return `<span class="table-check check-yes">✓ Yes</span>`;
+          if (status === "owned") return `<span class="table-check check-guard">🔒 Own</span>`;
+          return `<span class="table-check check-no">⛔ Denied</span>`;
+        };
+
+        tr.innerHTML = `
+          <td><strong>${ctrl.name}</strong></td>
+          <td><code>${act.name}</code></td>
+          <td><span class="http-badge ${act.verb.toLowerCase()}">${act.verb}</span></td>
+          <td><code style="font-size:12px;">${act.route}</code></td>
+          <td><span style="font-size:11px; font-weight:600;">${act.authLabel}</span></td>
+          <td>${getTableBadge(act.anon)}</td>
+          <td>${getTableBadge(act.reader)}</td>
+          <td>${getTableBadge(act.author)}</td>
+          <td>${getTableBadge(act.admin)}</td>
+          <td><code style="font-size:11px; color:var(--text-sub);">${act.repos}</code></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    });
+  }
+
+  // Toggle Implementation Code Snippet
+  function toggleCode(id) {
+    const el = document.getElementById(`code-${id}`);
+    if (el) el.classList.toggle("open");
+  }
+
+  // Toggle Controller Block Collapse
+  function toggleCollapse(ctrlIdx) {
+    const grid = document.getElementById(`grid-${ctrlIdx}`);
+    const chevron = document.getElementById(`chevron-${ctrlIdx}`);
+    if (grid.style.display === "none") {
+      grid.style.display = "grid";
+      chevron.innerText = "▼";
+    } else {
+      grid.style.display = "none";
+      chevron.innerText = "▶";
+    }
+  }
+
+  // Interactive Role Filter Handler
+  function setRole(role) {
+    currentRole = role;
+    document.querySelectorAll(".role-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.getAttribute("data-role") === role);
+    });
+
+    updateSvgPerspective(role);
+    renderControllers();
+    renderMatrixTable();
+  }
+
+  // Category Filter Handler
+  function setFilter(filter) {
+    currentFilter = filter;
+    document.querySelectorAll(".filter-tab").forEach(tab => {
+      tab.classList.toggle("active", tab.getAttribute("data-filter") === filter);
+    });
+    renderControllers();
+    renderMatrixTable();
+  }
+
+  // Search Input Handler
+  function handleSearch() {
+    searchQuery = document.getElementById("searchInput").value.trim();
+    renderControllers();
+    renderMatrixTable();
+  }
+
+  // Update SVG Visual Highlighting based on selected role
+  function updateSvgPerspective(role) {
+    const label = document.getElementById("flowPerspectiveLabel");
+    const pAnon = document.getElementById("pathAnon");
+    const pReader = document.getElementById("pathReader");
+    const pAuthor = document.getElementById("pathAuthor");
+    const pAdmin = document.getElementById("pathAdmin");
+
+    const nAnon = document.getElementById("nodeRoleAnon");
+    const nReader = document.getElementById("nodeRoleReader");
+    const nAuthor = document.getElementById("nodeRoleAuthor");
+    const nAdmin = document.getElementById("nodeRoleAdmin");
+
+    // Reset opacities
+    [pAnon, pReader, pAuthor, pAdmin].forEach(p => { p.style.opacity = "1"; p.style.strokeWidth = "2.5"; });
+    [nAnon, nReader, nAuthor, nAdmin].forEach(n => { n.style.opacity = "1"; });
+
+    if (role === "anon") {
+      label.innerText = "Simulating Anonymous (Guest) Request Path: Public AllowAnonymous Gate & Read Repositories";
+      pReader.style.opacity = "0.15";
+      pAuthor.style.opacity = "0.15";
+      pAdmin.style.opacity = "0.15";
+      nReader.style.opacity = "0.3";
+      nAuthor.style.opacity = "0.3";
+      nAdmin.style.opacity = "0.3";
+      pAnon.style.strokeWidth = "4";
+    } else if (role === "reader") {
+      label.innerText = "Simulating Reader Role Request Path: Cookie Auth Challenge, Bookmarks & Comment Discussions";
+      pAnon.style.opacity = "0.4";
+      pAuthor.style.opacity = "0.15";
+      pAdmin.style.opacity = "0.15";
+      nAnon.style.opacity = "0.5";
+      nAuthor.style.opacity = "0.3";
+      nAdmin.style.opacity = "0.3";
+      pReader.style.strokeWidth = "4";
+    } else if (role === "author") {
+      label.innerText = "Simulating Author Role Request Path: [Authorize(Roles='Admin,Author')] & Article Ownership Guard";
+      pAnon.style.opacity = "0.4";
+      pReader.style.opacity = "0.4";
+      pAdmin.style.opacity = "0.15";
+      nAnon.style.opacity = "0.5";
+      nReader.style.opacity = "0.5";
+      nAdmin.style.opacity = "0.3";
+      pAuthor.style.strokeWidth = "4";
+    } else if (role === "admin") {
+      label.innerText = "Simulating Administrator Role: Full Platform Access, Ownership Bypass & Live News Engine";
+      pAdmin.style.strokeWidth = "4";
+    } else {
+      label.innerText = "Showing all request execution paths across application tiers";
+    }
+  }
+
+  // Theme Toggle
+  function toggleTheme() {
+    const isLight = document.body.getAttribute("data-theme") === "light";
+    if (isLight) {
+      document.body.removeAttribute("data-theme");
+      document.getElementById("themeIcon").innerText = "☀️";
+      document.getElementById("themeText").innerText = "Light Mode";
+    } else {
+      document.body.setAttribute("data-theme", "light");
+      document.getElementById("themeIcon").innerText = "🌙";
+      document.getElementById("themeText").innerText = "Dark Mode";
+    }
+  }
+
+  // Initial Boot
+  renderControllers();
+  renderMatrixTable();
+</script>
+
+</body>
+</html>

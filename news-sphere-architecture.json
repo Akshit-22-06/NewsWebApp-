@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "NewsSphere System Architecture",
+    "output": "news-sphere-architecture.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "reader-flow",
+        "label": "Reader Request Flow",
+        "focus": ["users", "frontend", "controllers", "repositories", "database"],
+        "note": "Follow reader requests from the browser through Razor views, MVC controllers, and repositories to durable database storage."
+      },
+      {
+        "id": "auth-security",
+        "label": "Authentication & Security",
+        "focus": ["users", "controllers", "identity", "database"],
+        "note": "Inspect cookie authentication and role-based authorization for Readers, Authors, and Administrators."
+      },
+      {
+        "id": "news-ingestion",
+        "label": "Live News Ingestion",
+        "focus": ["bg_worker", "services", "external_apis", "rss_feeds", "repositories", "database"],
+        "note": "Trace scheduled background synchronization polling external REST APIs and global RSS feeds into the news repository."
+      },
+      {
+        "id": "full-system",
+        "label": "Full System Architecture",
+        "focus": ["users", "frontend", "controllers", "identity", "repositories", "database", "bg_worker", "services", "external_apis", "rss_feeds"],
+        "note": "Complete architectural overview showing presentation, business logic, data access, and external integrations."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "users",
+      "type": "external",
+      "label": "Client Browsers",
+      "sublabel": "Readers & Admins",
+      "tag": "HTTP / AJAX",
+      "pos": [40, 260],
+      "size": [120, 64]
+    },
+    {
+      "id": "frontend",
+      "type": "frontend",
+      "label": "Razor Presentation",
+      "sublabel": "Views + Vanilla CSS / JS",
+      "tag": "Responsive UI",
+      "pos": [270, 260],
+      "size": [140, 64]
+    },
+    {
+      "id": "controllers",
+      "type": "backend",
+      "label": "MVC Controllers",
+      "sublabel": "Home, News, Admin, Account",
+      "brand": "dotnet",
+      "pos": [520, 260],
+      "size": [150, 64]
+    },
+    {
+      "id": "identity",
+      "type": "security",
+      "label": "ASP.NET Identity",
+      "sublabel": "Cookie Auth & RBAC",
+      "tag": "Admin/Author/Reader",
+      "pos": [520, 100],
+      "size": [150, 64]
+    },
+    {
+      "id": "repositories",
+      "type": "backend",
+      "label": "Repository Layer",
+      "sublabel": "INews, ICategory, IAuthor",
+      "tag": "Async LINQ",
+      "pos": [780, 260],
+      "size": [150, 64]
+    },
+    {
+      "id": "database",
+      "type": "database",
+      "label": "Relational Database",
+      "sublabel": "SQLite / SQL Server",
+      "brand": "sqlite",
+      "pos": [1040, 260],
+      "size": [150, 64]
+    },
+    {
+      "id": "bg_worker",
+      "type": "backend",
+      "label": "Sync Background Worker",
+      "sublabel": "IHostedService Cron Poller",
+      "tag": "Hourly Timer",
+      "pos": [520, 430],
+      "size": [150, 64]
+    },
+    {
+      "id": "services",
+      "type": "backend",
+      "label": "Live News Service",
+      "sublabel": "Ingestion & Feed Parser",
+      "tag": "Deduplication",
+      "pos": [780, 430],
+      "size": [150, 64]
+    },
+    {
+      "id": "external_apis",
+      "type": "external",
+      "label": "External News APIs",
+      "sublabel": "HackerNews, GNews, NewsAPI",
+      "pos": [1040, 430],
+      "size": [150, 64]
+    },
+    {
+      "id": "rss_feeds",
+      "type": "external",
+      "label": "Syndication Feeds",
+      "sublabel": "BBC, TechCrunch, Verge XML",
+      "pos": [1040, 570],
+      "size": [150, 64]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "ASP.NET Core Web Application (.NET 10)",
+      "wraps": ["frontend", "controllers", "identity", "repositories", "bg_worker", "services"]
+    },
+    {
+      "kind": "security-group",
+      "label": "Data Persistence Tier",
+      "wraps": ["database"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "client-request",
+      "from": "users",
+      "to": "frontend",
+      "label": "HTTPS request",
+      "variant": "emphasis"
+    },
+    {
+      "id": "view-dispatch",
+      "from": "frontend",
+      "to": "controllers",
+      "label": "action dispatch"
+    },
+    {
+      "id": "auth-check",
+      "from": "controllers",
+      "to": "identity",
+      "label": "RBAC & cookie",
+      "variant": "security"
+    },
+    {
+      "id": "repo-query",
+      "from": "controllers",
+      "to": "repositories",
+      "label": "LINQ queries"
+    },
+    {
+      "id": "ef-persist",
+      "from": "repositories",
+      "to": "database",
+      "label": "EF Core / SQL"
+    },
+    {
+      "id": "cron-trigger",
+      "from": "bg_worker",
+      "to": "services",
+      "label": "hourly timer",
+      "variant": "dashed"
+    },
+    {
+      "id": "persist-articles",
+      "from": "services",
+      "to": "repositories",
+      "label": "persist news"
+    },
+    {
+      "id": "fetch-apis",
+      "from": "services",
+      "to": "external_apis",
+      "label": "REST JSON"
+    },
+    {
+      "id": "fetch-rss",
+      "from": "services",
+      "to": "rss_feeds",
+      "label": "RSS XML"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Frontend & MVC Core",
+      "items": [
+        "Pure Vanilla CSS design system with zero third-party UI framework dependencies",
+        "ASP.NET Core MVC controllers with SEO-friendly slug routing engine",
+        "Role-based access control protecting reader, author, and admin workflows"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Automated Ingestion Engine",
+      "items": [
+        "Background hosted service polling news feeds on a configurable hourly schedule",
+        "Multi-channel ingestion from Hacker News REST, GNews, NewsAPI, and RSS/Atom feeds",
+        "Automatic article deduplication, category mapping, and image normalization"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Data Architecture & Resilience",
+      "items": [
+        "Dual database provider support for SQLite local development and SQL Server production",
+        "Repository pattern decoupling business logic from Entity Framework Core queries",
+        "Automatic database schema initialization and initial seed data on startup"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,407 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "NewsSphere Role-to-Action Execution Flow",
+    "output": "news-sphere-role-flow.html",
+    "animation": "trace",
+    "visual_preset": "signal-flow",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "anon-path",
+        "label": "1. Anonymous Guest Flow",
+        "focus": ["role_anon", "gate_anon", "ctrl_public", "exec_public", "repo_public"],
+        "note": "Guests browse headlines, search articles, read stories, and register without authentication challenges."
+      },
+      {
+        "id": "reader-path",
+        "label": "2. Reader Engagement Flow",
+        "focus": ["role_reader", "gate_reader", "ctrl_reader", "guard_reader", "repo_reader"],
+        "note": "Readers submit discussion comments, manage personal reading bookmarks, and delete their own comments."
+      },
+      {
+        "id": "author-path",
+        "label": "3. Author Editorial Studio Flow",
+        "focus": ["role_author", "gate_author", "ctrl_author", "guard_author", "repo_author"],
+        "note": "Staff journalists author, edit, and toggle publication status of their own articles with ownership validation."
+      },
+      {
+        "id": "admin-path",
+        "label": "4. Administrator Operations Flow",
+        "focus": ["role_admin", "gate_admin", "ctrl_admin", "guard_admin", "repo_admin"],
+        "note": "Administrators command categories, moderate comments, audit accounts, and ingest multi-feed live news."
+      }
+    ]
+  },
+  "lanes": [
+    { "id": "guest_lane", "label": "Anonymous (Guest) Pipeline" },
+    { "id": "reader_lane", "label": "Reader Engagement Pipeline" },
+    { "id": "author_lane", "label": "Author Editorial Studio" },
+    { "id": "admin_lane", "label": "Administrator Command Hub" }
+  ],
+  "phases": [
+    { "id": "phase_auth", "label": "Ingress & Identity Middleware", "fromCol": 0, "toCol": 1 },
+    { "id": "phase_dispatch", "label": "Action Dispatch & Ownership Guard", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "phase_repo", "label": "Repository Pattern & Persistence", "fromCol": 4, "toCol": 4, "variant": "dashed" }
+  ],
+  "groups": [
+    { "id": "grp_guest", "label": "Public Browsing Loop", "lane": "guest_lane", "fromCol": 1, "toCol": 3, "variant": "emphasis" },
+    { "id": "grp_editorial", "label": "Editorial Studio", "lane": "author_lane", "fromCol": 1, "toCol": 3, "variant": "security" },
+    { "id": "grp_admin", "label": "Platform Operations", "lane": "admin_lane", "fromCol": 1, "toCol": 3, "variant": "security" }
+  ],
+  "mainPath": [
+    "role_reader",
+    "gate_reader",
+    "ctrl_reader",
+    "guard_reader",
+    "repo_reader"
+  ],
+  "nodes": [
+    {
+      "id": "role_anon",
+      "lane": "guest_lane",
+      "col": 0,
+      "type": "external",
+      "label": "Anonymous Guest",
+      "sublabel": "Public Visitor",
+      "tag": "Unauthenticated",
+      "width": 140
+    },
+    {
+      "id": "gate_anon",
+      "lane": "guest_lane",
+      "col": 1,
+      "type": "frontend",
+      "label": "AllowAnonymous",
+      "sublabel": "No Auth Required",
+      "tag": "Public Bypass",
+      "width": 140
+    },
+    {
+      "id": "ctrl_public",
+      "lane": "guest_lane",
+      "col": 2,
+      "type": "backend",
+      "label": "Public Actions",
+      "sublabel": "Home, Category, News",
+      "width": 140
+    },
+    {
+      "id": "exec_public",
+      "lane": "guest_lane",
+      "col": 3,
+      "type": "frontend",
+      "label": "Public Exec",
+      "sublabel": "Read Queries Only",
+      "tag": "HTTP 200 OK",
+      "width": 140
+    },
+    {
+      "id": "repo_public",
+      "lane": "guest_lane",
+      "col": 4,
+      "type": "backend",
+      "label": "News Repos & Views",
+      "sublabel": "INewsRepo / EF Core",
+      "tag": "NoTracking",
+      "width": 140
+    },
+
+    {
+      "id": "role_reader",
+      "lane": "reader_lane",
+      "col": 0,
+      "type": "external",
+      "label": "Reader Role",
+      "sublabel": "Subscriber",
+      "tag": "Reader Claim",
+      "width": 140
+    },
+    {
+      "id": "gate_reader",
+      "lane": "reader_lane",
+      "col": 1,
+      "type": "security",
+      "label": "Cookie Auth",
+      "sublabel": "Session & Token",
+      "tag": "401 Challenge",
+      "width": 140
+    },
+    {
+      "id": "ctrl_reader",
+      "lane": "reader_lane",
+      "col": 2,
+      "type": "backend",
+      "label": "Reader Actions",
+      "sublabel": "Bookmarks, Comments",
+      "width": 140
+    },
+    {
+      "id": "guard_reader",
+      "lane": "reader_lane",
+      "col": 3,
+      "type": "security",
+      "label": "Comment Guard",
+      "sublabel": "UserId == AuthorId",
+      "tag": "403 Forbid",
+      "width": 140
+    },
+    {
+      "id": "repo_reader",
+      "lane": "reader_lane",
+      "col": 4,
+      "type": "backend",
+      "label": "Engagement Repos",
+      "sublabel": "IBookmarkRepo / EF DB",
+      "tag": "Scoped DI",
+      "width": 140
+    },
+
+    {
+      "id": "role_author",
+      "lane": "author_lane",
+      "col": 0,
+      "type": "external",
+      "label": "Author Role",
+      "sublabel": "Staff Journalist",
+      "tag": "Author Claim",
+      "width": 140
+    },
+    {
+      "id": "gate_author",
+      "lane": "author_lane",
+      "col": 1,
+      "type": "security",
+      "label": "Role Filter",
+      "sublabel": "Roles: Admin,Author",
+      "tag": "RBAC Check",
+      "width": 140
+    },
+    {
+      "id": "ctrl_author",
+      "lane": "author_lane",
+      "col": 2,
+      "type": "backend",
+      "label": "Author Studio",
+      "sublabel": "Article CRUD",
+      "width": 140
+    },
+    {
+      "id": "guard_author",
+      "lane": "author_lane",
+      "col": 3,
+      "type": "security",
+      "label": "Article Guard",
+      "sublabel": "UserId == AuthorId",
+      "tag": "403 Forbid",
+      "width": 140
+    },
+    {
+      "id": "repo_author",
+      "lane": "author_lane",
+      "col": 4,
+      "type": "backend",
+      "label": "Editorial Repos",
+      "sublabel": "INewsRepo / EF Core",
+      "tag": "Article CRUD",
+      "width": 140
+    },
+
+    {
+      "id": "role_admin",
+      "lane": "admin_lane",
+      "col": 0,
+      "type": "external",
+      "label": "Administrator",
+      "sublabel": "Chief Editor & Ops",
+      "tag": "Admin Claim",
+      "width": 140
+    },
+    {
+      "id": "gate_admin",
+      "lane": "admin_lane",
+      "col": 1,
+      "type": "security",
+      "label": "Admin Gate",
+      "sublabel": "Role: Admin",
+      "tag": "Strict RBAC",
+      "width": 140
+    },
+    {
+      "id": "ctrl_admin",
+      "lane": "admin_lane",
+      "col": 2,
+      "type": "backend",
+      "label": "Admin Ops",
+      "sublabel": "Categories, LiveNews",
+      "width": 140
+    },
+    {
+      "id": "guard_admin",
+      "lane": "admin_lane",
+      "col": 3,
+      "type": "security",
+      "label": "Admin Bypass",
+      "sublabel": "Bypasses Guard",
+      "tag": "Superuser",
+      "width": 140
+    },
+    {
+      "id": "repo_admin",
+      "lane": "admin_lane",
+      "col": 4,
+      "type": "backend",
+      "label": "Live Sync & DB",
+      "sublabel": "ILiveNewsService / DB",
+      "tag": "Multi-Feed",
+      "width": 140
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_anon_1",
+      "from": "role_anon",
+      "to": "gate_anon",
+      "label": "GET /news",
+      "variant": "default"
+    },
+    {
+      "id": "e_anon_2",
+      "from": "gate_anon",
+      "to": "ctrl_public",
+      "label": "allow anonymous",
+      "variant": "default"
+    },
+    {
+      "id": "e_anon_3",
+      "from": "ctrl_public",
+      "to": "exec_public",
+      "label": "invoke action",
+      "variant": "default"
+    },
+    {
+      "id": "e_anon_4",
+      "from": "exec_public",
+      "to": "repo_public",
+      "label": "query articles",
+      "variant": "emphasis"
+    },
+
+    {
+      "id": "e_reader_1",
+      "from": "role_reader",
+      "to": "gate_reader",
+      "label": "POST /news/addcomment",
+      "variant": "security"
+    },
+    {
+      "id": "e_reader_2",
+      "from": "gate_reader",
+      "to": "ctrl_reader",
+      "label": "cookie valid",
+      "variant": "security"
+    },
+    {
+      "id": "e_reader_3",
+      "from": "ctrl_reader",
+      "to": "guard_reader",
+      "label": "verify comment owner",
+      "variant": "security"
+    },
+    {
+      "id": "e_reader_4",
+      "from": "guard_reader",
+      "to": "repo_reader",
+      "label": "AddCommentAsync",
+      "variant": "emphasis"
+    },
+
+    {
+      "id": "e_author_1",
+      "from": "role_author",
+      "to": "gate_author",
+      "label": "GET /admin/articles",
+      "variant": "security"
+    },
+    {
+      "id": "e_author_2",
+      "from": "gate_author",
+      "to": "ctrl_author",
+      "label": "in Author role",
+      "variant": "security"
+    },
+    {
+      "id": "e_author_3",
+      "from": "ctrl_author",
+      "to": "guard_author",
+      "label": "verify article owner",
+      "variant": "security"
+    },
+    {
+      "id": "e_author_4",
+      "from": "guard_author",
+      "to": "repo_author",
+      "label": "UpdateAsync",
+      "variant": "emphasis"
+    },
+
+    {
+      "id": "e_admin_1",
+      "from": "role_admin",
+      "to": "gate_admin",
+      "label": "POST /admin/synclivenews",
+      "variant": "security"
+    },
+    {
+      "id": "e_admin_2",
+      "from": "gate_admin",
+      "to": "ctrl_admin",
+      "label": "in Admin role",
+      "variant": "security"
+    },
+    {
+      "id": "e_admin_3",
+      "from": "ctrl_admin",
+      "to": "guard_admin",
+      "label": "bypass guards",
+      "variant": "security"
+    },
+    {
+      "id": "e_admin_4",
+      "from": "guard_admin",
+      "to": "repo_admin",
+      "label": "SyncAllFeedsAsync",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Public & Anonymous Pipeline",
+      "items": [
+        "Unauthenticated visitors access HomeController, CategoryController, AuthorController, and NewsController public actions",
+        "Endpoints execute with AsNoTracking() read optimizations for high throughput and zero cookie challenge overhead",
+        "Self-registration via AccountController assigns the default 'Reader' role and establishes encrypted cookie sessions"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Reader & Author Interaction Rails",
+      "items": [
+        "Authenticated Readers gain access to bookmarks (/news/bookmarks) and interactive commenting (/news/addcomment)",
+        "Staff Authors access the editorial studio (/admin) to author, edit, and toggle publish state on their own articles",
+        "Granular resource ownership guards enforce article.Author.UserId == currentUserId; foreign access triggers HTTP 403 Forbid()"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Administrator Operations & Multi-Feed Sync",
+      "items": [
+        "Administrators hold superuser privileges across all controllers, overriding author article boundaries",
+        "Exclusive Admin actions include Category CRUD, global comment deletion, user role auditing, and newsletter subscriber tracking",
+        "The Live News Hub (/admin/livenews) coordinates on-demand and background ingestion across Hacker News, GNews, and RSS XML feeds"
+      ]
+    }
+  ]
+}

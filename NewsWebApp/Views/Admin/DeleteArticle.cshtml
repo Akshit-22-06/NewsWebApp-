@@ -1,0 +1,64 @@
+@model NewsWebApp.Models.NewsArticle
+@{
+    ViewData["Title"] = "Delete Article";
+}
+
+<h1>Delete</h1>
+
+<partial name="_AdminNav" />
+
+<h3>Are you sure you want to delete this?</h3>
+<div>
+    <h4>NewsArticle</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">
+            Title
+        </dt>
+        <dd class="col-sm-10">
+            @Model.Title
+        </dd>
+        <dt class="col-sm-2">
+            Category
+        </dt>
+        <dd class="col-sm-10">
+            @Model.Category?.Name
+        </dd>
+        <dt class="col-sm-2">
+            Author
+        </dt>
+        <dd class="col-sm-10">
+            @(Model.Author?.DisplayName ?? "Staff Reporter")
+        </dd>
+        <dt class="col-sm-2">
+            Slug
+        </dt>
+        <dd class="col-sm-10">
+            @Model.Slug
+        </dd>
+        <dt class="col-sm-2">
+            Status
+        </dt>
+        <dd class="col-sm-10">
+            @(Model.IsPublished ? "Published" : "Draft")
+        </dd>
+        <dt class="col-sm-2">
+            Views
+        </dt>
+        <dd class="col-sm-10">
+            @Model.ViewCount
+        </dd>
+        <dt class="col-sm-2">
+            Comments
+        </dt>
+        <dd class="col-sm-10">
+            @Model.Comments.Count
+        </dd>
+    </dl>
+
+    <form asp-controller="Admin" asp-action="DeleteArticle" asp-route-id="@Model.Id" method="post">
+        @Html.AntiForgeryToken()
+        <input type="submit" value="Delete" class="btn btn-danger" /> |
+        <a asp-action="Articles">Back to List</a>
+    </form>
+</div>

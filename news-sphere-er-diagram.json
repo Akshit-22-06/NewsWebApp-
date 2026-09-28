@@ -1,0 +1,187 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "NewsSphere Entity-Relationship (ER) Data Model",
+    "output": "news-sphere-er-diagram.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "content-core",
+        "label": "Content Core & Taxonomy",
+        "focus": ["categories", "articles", "authors"],
+        "note": "Core publishing pipeline linking categories, articles, and author profiles."
+      },
+      {
+        "id": "user-engagement",
+        "label": "User Interaction & Identity",
+        "focus": ["users", "comments", "bookmarks", "articles"],
+        "note": "Social engagement graph connecting registered users to article comments and bookmarks."
+      },
+      {
+        "id": "syndication-domain",
+        "label": "Syndication & Subscriptions",
+        "focus": ["sources", "categories", "newsletters"],
+        "note": "Ingestion feed mapping and audience newsletter subscribers."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "categories",
+      "type": "database",
+      "label": "Category",
+      "sublabel": "PK: Id (int) | Slug",
+      "tag": "1:N Articles",
+      "pos": [60, 160],
+      "size": [160, 64]
+    },
+    {
+      "id": "sources",
+      "type": "database",
+      "label": "NewsFeedSource",
+      "sublabel": "PK: Id (int) | RSS / API",
+      "tag": "CategorySlug",
+      "pos": [60, 340],
+      "size": [160, 64]
+    },
+    {
+      "id": "articles",
+      "type": "database",
+      "label": "NewsArticle",
+      "sublabel": "PK: Id (int) | Slug",
+      "tag": "FK: Author, Category",
+      "brand": "sqlite",
+      "pos": [340, 250],
+      "size": [170, 64]
+    },
+    {
+      "id": "comments",
+      "type": "database",
+      "label": "Comment",
+      "sublabel": "PK: Id (int) | Content",
+      "tag": "FK: Article, User",
+      "pos": [630, 160],
+      "size": [160, 64]
+    },
+    {
+      "id": "bookmarks",
+      "type": "database",
+      "label": "ArticleBookmark",
+      "sublabel": "PK: Id (int) | SavedAt",
+      "tag": "FK: Article, User",
+      "pos": [630, 340],
+      "size": [160, 64]
+    },
+    {
+      "id": "authors",
+      "type": "database",
+      "label": "Author",
+      "sublabel": "PK: Id (int) | Bio",
+      "tag": "FK: ApplicationUserId",
+      "pos": [910, 70],
+      "size": [160, 64]
+    },
+    {
+      "id": "users",
+      "type": "database",
+      "label": "ApplicationUser",
+      "sublabel": "PK: Id (string) | Auth",
+      "tag": "IdentityUser",
+      "brand": "dotnet",
+      "pos": [910, 250],
+      "size": [160, 64]
+    },
+    {
+      "id": "newsletters",
+      "type": "database",
+      "label": "NewsletterSubscriber",
+      "sublabel": "PK: Id (int) | Email",
+      "tag": "Opt-in Active",
+      "pos": [910, 420],
+      "size": [160, 64]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "NewsSphere Relational Database Schema (EF Core / SQLite / SQL Server)",
+      "wraps": ["categories", "sources", "articles", "comments", "bookmarks", "authors", "users", "newsletters"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "category-to-article",
+      "from": "categories",
+      "to": "articles",
+      "label": "1:N categorizes"
+    },
+    {
+      "id": "source-to-category",
+      "from": "sources",
+      "to": "categories",
+      "label": "maps slug",
+      "variant": "dashed"
+    },
+    {
+      "id": "article-to-comment",
+      "from": "articles",
+      "to": "comments",
+      "label": "1:N comments"
+    },
+    {
+      "id": "article-to-bookmark",
+      "from": "articles",
+      "to": "bookmarks",
+      "label": "1:N saved in"
+    },
+    {
+      "id": "user-to-author",
+      "from": "users",
+      "to": "authors",
+      "label": "1:0..1 profile",
+      "variant": "security"
+    },
+    {
+      "id": "user-to-comment",
+      "from": "users",
+      "to": "comments",
+      "label": "1:N posts"
+    },
+    {
+      "id": "user-to-bookmark",
+      "from": "users",
+      "to": "bookmarks",
+      "label": "1:N saves"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Editorial Domain",
+      "items": [
+        "NewsArticle has foreign keys to Category (CategoryId) and Author (AuthorId)",
+        "Slugs are uniquely indexed on NewsArticle and Category for clean SEO URLs",
+        "Author profile optionally links 1:0..1 to an ApplicationUser account"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Engagement & Social",
+      "items": [
+        "Comments are tied to both NewsArticle and ApplicationUser with moderation flags",
+        "ArticleBookmark enables readers to create personalized reading lists",
+        "Cascade delete behaviors are managed to prevent cyclical database locks"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Ingestion & Growth",
+      "items": [
+        "NewsFeedSource stores external RSS/API endpoints and maps to Category slugs",
+        "NewsletterSubscriber tracks opted-in subscriber emails and active states",
+        "Managed via ApplicationDbContext with asynchronous LINQ and AsNoTracking queries"
+      ]
+    }
+  ]
+}

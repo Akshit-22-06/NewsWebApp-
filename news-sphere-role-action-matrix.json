@@ -1,0 +1,432 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "NewsSphere Role-to-Action Access & Execution Architecture",
+    "output": "news-sphere-role-action-matrix.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "anonymous-view",
+        "label": "1. Anonymous (Guest) Access",
+        "focus": ["role_anon", "public_gateway", "ctrl_home", "ctrl_catalog", "ctrl_news", "ctrl_account", "repo_news_bookmarks", "repo_cat_auth", "db_app"],
+        "note": "Guests access public articles, category directory, journalist bios, search, and register/login without authentication challenge."
+      },
+      {
+        "id": "reader-view",
+        "label": "2. Reader Role Access",
+        "focus": ["role_reader", "auth_pipeline", "ctrl_news", "ctrl_account", "ownership_guard", "repo_news_bookmarks", "repo_comment_news", "db_app"],
+        "note": "Authenticated readers access personal bookmarks, discussion comments, and self-comment deletion guarded by user ownership."
+      },
+      {
+        "id": "author-view",
+        "label": "3. Author Role Access",
+        "focus": ["role_author", "auth_pipeline", "ownership_guard", "ctrl_admin_author", "repo_news_bookmarks", "repo_cat_auth", "db_app"],
+        "note": "Journalists access editorial studio to draft, edit, and publish their own articles with ownership verification."
+      },
+      {
+        "id": "admin-view",
+        "label": "4. Administrator Full Access",
+        "focus": ["role_admin", "auth_pipeline", "admin_gate", "ctrl_admin_author", "ctrl_admin_ops", "service_live_sync", "identity_manager", "repo_news_bookmarks", "repo_cat_auth", "repo_comment_news", "db_app", "db_identity", "ext_feeds"],
+        "note": "Administrators bypass ownership checks, manage categories, moderate comments, audit users, and command live news ingestion."
+      },
+      {
+        "id": "full-rbac",
+        "label": "5. Complete RBAC Matrix",
+        "focus": ["role_anon", "role_reader", "role_author", "role_admin", "public_gateway", "auth_pipeline", "ownership_guard", "admin_gate", "ctrl_home", "ctrl_catalog", "ctrl_news", "ctrl_account", "ctrl_admin_author", "ctrl_admin_ops", "repo_news_bookmarks", "repo_cat_auth", "repo_comment_news", "service_live_sync", "identity_manager", "db_app", "db_identity", "ext_feeds"],
+        "note": "End-to-end mapping from user roles through authorization gates to MVC controllers, repository abstractions, and persistent storage."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "role_anon",
+      "type": "external",
+      "label": "Anonymous Guest",
+      "sublabel": "Unauthenticated Visitor",
+      "tag": "Public Access",
+      "pos": [40, 90],
+      "size": [160, 64]
+    },
+    {
+      "id": "role_reader",
+      "type": "external",
+      "label": "Reader Role",
+      "sublabel": "Registered Member",
+      "tag": "Cookie Authenticated",
+      "pos": [40, 230],
+      "size": [160, 64]
+    },
+    {
+      "id": "role_author",
+      "type": "external",
+      "label": "Author Role",
+      "sublabel": "Staff Journalist",
+      "tag": "Role: Author",
+      "pos": [40, 390],
+      "size": [160, 64]
+    },
+    {
+      "id": "role_admin",
+      "type": "external",
+      "label": "Administrator",
+      "sublabel": "Chief Editor & Ops",
+      "tag": "Role: Admin",
+      "pos": [40, 550],
+      "size": [160, 64]
+    },
+    {
+      "id": "public_gateway",
+      "type": "frontend",
+      "label": "Public Bypass Gate",
+      "sublabel": "AllowAnonymous Access",
+      "tag": "No Challenge",
+      "pos": [270, 90],
+      "size": [170, 64]
+    },
+    {
+      "id": "auth_pipeline",
+      "type": "security",
+      "label": "Auth Middleware",
+      "sublabel": "Cookie & [Authorize]",
+      "tag": "401 Challenge",
+      "pos": [270, 230],
+      "size": [170, 64]
+    },
+    {
+      "id": "ownership_guard",
+      "type": "security",
+      "label": "Ownership Guard",
+      "sublabel": "UserId == CurrentUserId",
+      "tag": "403 Forbid",
+      "pos": [270, 390],
+      "size": [170, 64]
+    },
+    {
+      "id": "admin_gate",
+      "type": "security",
+      "label": "Admin Role Gate",
+      "sublabel": "[Authorize(Roles=\"Admin\")]",
+      "tag": "403 Forbidden",
+      "pos": [270, 550],
+      "size": [170, 64]
+    },
+    {
+      "id": "ctrl_home",
+      "type": "backend",
+      "label": "HomeController",
+      "sublabel": "Index, Subscribe, About, Error",
+      "brand": "dotnet",
+      "pos": [510, 60],
+      "size": [180, 64]
+    },
+    {
+      "id": "ctrl_catalog",
+      "type": "backend",
+      "label": "Category & Author",
+      "sublabel": "Index & Details Views",
+      "brand": "dotnet",
+      "pos": [510, 160],
+      "size": [180, 64]
+    },
+    {
+      "id": "ctrl_news",
+      "type": "backend",
+      "label": "NewsController",
+      "sublabel": "Browse, Bookmarks, Comments",
+      "brand": "dotnet",
+      "pos": [510, 260],
+      "size": [180, 64]
+    },
+    {
+      "id": "ctrl_account",
+      "type": "backend",
+      "label": "AccountController",
+      "sublabel": "Register, Login, Logout",
+      "brand": "dotnet",
+      "pos": [510, 360],
+      "size": [180, 64]
+    },
+    {
+      "id": "ctrl_admin_author",
+      "type": "backend",
+      "label": "Admin: Editorial",
+      "sublabel": "Dashboard, Article CRUD",
+      "brand": "dotnet",
+      "pos": [510, 460],
+      "size": [180, 64]
+    },
+    {
+      "id": "ctrl_admin_ops",
+      "type": "backend",
+      "label": "Admin: Platform Ops",
+      "sublabel": "Categories, Users, LiveNews",
+      "brand": "dotnet",
+      "pos": [510, 570],
+      "size": [180, 64]
+    },
+    {
+      "id": "repo_news_bookmarks",
+      "type": "backend",
+      "label": "News & Bookmarks",
+      "sublabel": "INewsRepo / IBookmarkRepo",
+      "tag": "Scoped",
+      "pos": [760, 160],
+      "size": [180, 64]
+    },
+    {
+      "id": "repo_cat_auth",
+      "type": "backend",
+      "label": "Taxonomy & Authors",
+      "sublabel": "ICategoryRepo / IAuthorRepo",
+      "tag": "Scoped",
+      "pos": [760, 270],
+      "size": [180, 64]
+    },
+    {
+      "id": "repo_comment_news",
+      "type": "backend",
+      "label": "Engagement Repos",
+      "sublabel": "ICommentRepo / INewsletter",
+      "tag": "Scoped",
+      "pos": [760, 380],
+      "size": [180, 64]
+    },
+    {
+      "id": "service_live_sync",
+      "type": "backend",
+      "label": "Live Sync & Feeds",
+      "sublabel": "ILiveNewsService / FeedRepo",
+      "tag": "Scoped",
+      "pos": [760, 490],
+      "size": [180, 64]
+    },
+    {
+      "id": "identity_manager",
+      "type": "backend",
+      "label": "Identity Services",
+      "sublabel": "UserManager & RoleManager",
+      "tag": "Security",
+      "pos": [760, 600],
+      "size": [180, 64]
+    },
+    {
+      "id": "db_app",
+      "type": "database",
+      "label": "ApplicationDbContext",
+      "sublabel": "Articles, Categories, Comments",
+      "brand": "sqlite",
+      "pos": [1020, 260],
+      "size": [170, 64]
+    },
+    {
+      "id": "db_identity",
+      "type": "database",
+      "label": "Identity Database",
+      "sublabel": "Users, Roles, Claims",
+      "brand": "sqlite",
+      "pos": [1020, 420],
+      "size": [170, 64]
+    },
+    {
+      "id": "ext_feeds",
+      "type": "external",
+      "label": "External Feeds & APIs",
+      "sublabel": "HackerNews, GNews, RSS",
+      "tag": "Syndication",
+      "pos": [1020, 560],
+      "size": [170, 64]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "User & Client Access Tier",
+      "wraps": ["role_anon", "role_reader", "role_author", "role_admin"]
+    },
+    {
+      "kind": "security-group",
+      "label": "ASP.NET Core Authorization & Security Gates",
+      "wraps": ["public_gateway", "auth_pipeline", "ownership_guard", "admin_gate"]
+    },
+    {
+      "kind": "region",
+      "label": "Presentation Layer: MVC Controllers",
+      "wraps": ["ctrl_home", "ctrl_catalog", "ctrl_news", "ctrl_account", "ctrl_admin_author", "ctrl_admin_ops"]
+    },
+    {
+      "kind": "region",
+      "label": "Service & Repository Layer (DI)",
+      "wraps": ["repo_news_bookmarks", "repo_cat_auth", "repo_comment_news", "service_live_sync", "identity_manager"]
+    },
+    {
+      "kind": "security-group",
+      "label": "Data Persistence & External Boundaries",
+      "wraps": ["db_app", "db_identity", "ext_feeds"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "anon-to-gate",
+      "from": "role_anon",
+      "to": "public_gateway",
+      "label": "unauthenticated"
+    },
+    {
+      "id": "reader-to-auth",
+      "from": "role_reader",
+      "to": "auth_pipeline",
+      "label": "auth cookie",
+      "variant": "security"
+    },
+    {
+      "id": "author-to-auth",
+      "from": "role_author",
+      "to": "auth_pipeline",
+      "label": "author claims",
+      "variant": "security"
+    },
+    {
+      "id": "admin-to-auth",
+      "from": "role_admin",
+      "to": "auth_pipeline",
+      "label": "admin claims",
+      "variant": "security"
+    },
+    {
+      "id": "public-to-home",
+      "from": "public_gateway",
+      "to": "ctrl_home",
+      "label": "public routes"
+    },
+    {
+      "id": "public-to-catalog",
+      "from": "public_gateway",
+      "to": "ctrl_catalog",
+      "label": "browsing"
+    },
+    {
+      "id": "auth-to-news",
+      "from": "auth_pipeline",
+      "to": "ctrl_news",
+      "label": "bookmarks & comments",
+      "variant": "emphasis"
+    },
+    {
+      "id": "auth-to-account",
+      "from": "auth_pipeline",
+      "to": "ctrl_account",
+      "label": "session / logout"
+    },
+    {
+      "id": "auth-to-editorial",
+      "from": "auth_pipeline",
+      "to": "ownership_guard",
+      "label": "author studio",
+      "variant": "security"
+    },
+    {
+      "id": "guard-to-editorial",
+      "from": "ownership_guard",
+      "to": "ctrl_admin_author",
+      "label": "own articles only"
+    },
+    {
+      "id": "auth-to-admin-gate",
+      "from": "auth_pipeline",
+      "to": "admin_gate",
+      "label": "admin check",
+      "variant": "security"
+    },
+    {
+      "id": "admin-gate-to-ops",
+      "from": "admin_gate",
+      "to": "ctrl_admin_ops",
+      "label": "platform ops",
+      "variant": "emphasis"
+    },
+    {
+      "id": "ctrl-news-to-repo",
+      "from": "ctrl_news",
+      "to": "repo_news_bookmarks",
+      "label": "queries & bookmarks"
+    },
+    {
+      "id": "ctrl-catalog-to-repo",
+      "from": "ctrl_catalog",
+      "to": "repo_cat_auth",
+      "label": "categories & authors"
+    },
+    {
+      "id": "ctrl-news-to-comments",
+      "from": "ctrl_news",
+      "to": "repo_comment_news",
+      "label": "reader comments"
+    },
+    {
+      "id": "ctrl-author-to-newsrepo",
+      "from": "ctrl_admin_author",
+      "to": "repo_news_bookmarks",
+      "label": "article CRUD"
+    },
+    {
+      "id": "ctrl-ops-to-sync",
+      "from": "ctrl_admin_ops",
+      "to": "service_live_sync",
+      "label": "manual/auto sync"
+    },
+    {
+      "id": "ctrl-ops-to-identity",
+      "from": "ctrl_admin_ops",
+      "to": "identity_manager",
+      "label": "user directory audit"
+    },
+    {
+      "id": "repo-to-db",
+      "from": "repo_news_bookmarks",
+      "to": "db_app",
+      "label": "LINQ / EF Core"
+    },
+    {
+      "id": "identity-to-db",
+      "from": "identity_manager",
+      "to": "db_identity",
+      "label": "user store"
+    },
+    {
+      "id": "sync-to-ext",
+      "from": "service_live_sync",
+      "to": "ext_feeds",
+      "label": "HTTP fetch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Authentication & Authorization Model",
+      "items": [
+        "Cookie authentication manages user identity across 14-day persistent sliding sessions",
+        "Role-based authorization ([Authorize(Roles = 'Admin,Author')]) restricts access to controller actions",
+        "Internal resource ownership guards compare article/comment author ID with ClaimsPrincipal.FindFirst(NameIdentifier)"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Layered Request Flow Execution",
+      "items": [
+        "Anonymous traffic passes directly to HomeController, CategoryController, AuthorController, and public News actions",
+        "Authenticated actions verify session cookies before dispatching to NewsController (bookmarks/comments) or AdminController",
+        "Ownership validations return 403 Forbidden if non-admin authors attempt modifying another journalist's articles"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Repository Pattern & Data Decoupling",
+      "items": [
+        "Controllers inject scoped repository abstractions (INewsRepository, ICategoryRepository, etc.) via DI container",
+        "EF Core change tracking is disabled (AsNoTracking) on public read queries for high throughput",
+        "Identity services (UserManager & RoleManager) isolate user credentials and role claims from presentation views"
+      ]
+    }
+  ]
+}
