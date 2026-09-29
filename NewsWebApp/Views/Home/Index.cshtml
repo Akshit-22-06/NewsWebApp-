@@ -8,6 +8,28 @@
     <p class="lead text-muted">A complete ASP.NET Core MVC platform with Entity Framework Core, Identity, and Live News Ingestion.</p>
 </div>
 
+<!-- City / Area News Quick Search Card -->
+<div class="card mb-4 border-primary shadow-sm">
+    <div class="card-body p-4">
+        <div class="row align-items-center">
+            <div class="col-lg-5 mb-3 mb-lg-0">
+                <h4 class="card-title text-primary mb-1">📍 Get News for Your City / Area</h4>
+                <p class="card-text text-muted small mb-0">Enter any city name (e.g. Pune, Jaipur, Lucknow, Chandigarh, Ahmedabad) to fetch instant live local headlines.</p>
+            </div>
+            <div class="col-lg-7">
+                <form asp-controller="News" asp-action="City" method="get" class="row g-2">
+                    <div class="col-sm-8">
+                        <input type="text" name="city" class="form-control form-control-lg" placeholder="Enter your city (e.g. Pune, Jaipur, Lucknow)..." required />
+                    </div>
+                    <div class="col-sm-4">
+                        <button type="submit" class="btn btn-primary btn-lg w-100">Get City News</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Geographic Quick Filters -->
 <div class="card mb-4 bg-light border-0 shadow-sm">
     <div class="card-body py-3">
@@ -22,6 +44,7 @@
             <a asp-controller="News" asp-action="Index" asp-route-region="Chennai" class="btn btn-sm btn-outline-warning text-dark">🌆 Chennai</a>
             <a asp-controller="News" asp-action="Index" asp-route-region="Hyderabad" class="btn btn-sm btn-outline-secondary">🏢 Hyderabad</a>
             <a asp-controller="News" asp-action="Index" asp-route-region="Kolkata" class="btn btn-sm btn-outline-dark">🎭 Kolkata</a>
+            <a asp-controller="News" asp-action="City" class="btn btn-sm btn-primary">📍 More Cities &rarr;</a>
         </div>
     </div>
 </div>

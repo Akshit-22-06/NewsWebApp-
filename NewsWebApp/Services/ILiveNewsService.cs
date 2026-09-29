@@ -38,6 +38,7 @@ namespace NewsWebApp.Services
         Task<LiveNewsSyncResult> SyncFromNewsApiAsync(string? apiKey = null, string? category = null);
         Task<LiveNewsSyncResult> SyncFromGNewsApiAsync(string? apiKey = null, string? category = null);
         Task<LiveNewsSyncResult> SyncCustomSourceAsync(int sourceId);
+        Task<LiveNewsSyncResult> FetchAndSyncCityNewsAsync(string city);
         IReadOnlyList<LiveNewsFeedSource> GetConfiguredFeedSources();
     }
 }

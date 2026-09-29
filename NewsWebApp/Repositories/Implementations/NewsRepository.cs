@@ -172,6 +172,23 @@ namespace NewsWebApp.Repositories.Implementations
             return predefined.Union(dbRegions).Distinct().ToList();
         }
 
+        public async Task<IEnumerable<NewsArticle>> GetCityArticlesAsync(string city, int count = 30)
+        {
+            if (string.IsNullOrWhiteSpace(city)) return Enumerable.Empty<NewsArticle>();
+
+            string term = city.Trim().ToLower();
+            return await _context.NewsArticles
+                .Where(a => a.IsPublished && (
+                    a.Region.ToLower() == term || 
+                    a.Title.ToLower().Contains(term) || 
+                    a.Summary.ToLower().Contains(term)))
+                .Include(a => a.Category)
+                .Include(a => a.Author)
+                .OrderByDescending(a => a.PublishedDate)
+                .Take(count)
+                .ToListAsync();
+        }
+
         public async Task<(IEnumerable<NewsArticle> Articles, int TotalCount)> GetPagedAdminAsync(
             string? search, int? categoryId, bool? isPublished, int page, int pageSize, string? authorUserId = null)
         {

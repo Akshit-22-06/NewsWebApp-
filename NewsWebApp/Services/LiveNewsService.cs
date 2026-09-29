@@ -469,6 +469,101 @@ namespace NewsWebApp.Services
             return result;
         }
 
+        // On-demand fetch and sync news for any custom city or local area entered by the user
+        public async Task<LiveNewsSyncResult> FetchAndSyncCityNewsAsync(string city)
+        {
+            var result = new LiveNewsSyncResult();
+            if (string.IsNullOrWhiteSpace(city)) return result;
+
+            // Normalize city name (e.g. "pune" -> "Pune")
+            string cleanCity = city.Trim();
+            if (cleanCity.Length > 1)
+            {
+                cleanCity = char.ToUpper(cleanCity[0]) + cleanCity[1..].ToLower();
+            }
+
+            string searchUrl = $"https://www.bing.com/news/search?q={Uri.EscapeDataString(cleanCity + " news")}&format=rss";
+
+            try
+            {
+                var client = _httpClientFactory.CreateClient("LiveNewsClient");
+                var xmlString = await client.GetStringAsync(searchUrl);
+                var doc = XDocument.Parse(xmlString);
+                var xmlItems = doc.Descendants().Where(e => e.Name.LocalName == "item" || e.Name.LocalName == "entry").Take(15);
+
+                using var scope = _scopeFactory.CreateScope();
+                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+                var category = await context.Categories.FirstOrDefaultAsync(c => c.Slug == "world") 
+                               ?? await context.Categories.FirstOrDefaultAsync();
+                var author = await context.Authors.FirstOrDefaultAsync();
+                if (category == null || author == null) return result;
+
+                foreach (var x in xmlItems)
+                {
+                    result.TotalArticlesFetched++;
+
+                    string title = x.Elements().FirstOrDefault(e => e.Name.LocalName == "title")?.Value?.Trim() ?? "";
+                    string link = x.Elements().FirstOrDefault(e => e.Name.LocalName == "link")?.Value?.Trim() ?? "";
+                    string summary = x.Elements().FirstOrDefault(e => e.Name.LocalName == "description" || e.Name.LocalName == "summary")?.Value?.Trim() ?? "";
+                    string source = x.Elements().FirstOrDefault(e => e.Name.LocalName == "Source")?.Value?.Trim() ?? $"{cleanCity} Live Wire";
+                    string? img = x.Elements().FirstOrDefault(e => e.Name.LocalName == "Image")?.Value?.Trim();
+
+                    if (string.IsNullOrWhiteSpace(title) || title.Length < 5) continue;
+
+                    summary = Regex.Replace(summary, "<.*?>", string.Empty).Trim();
+                    if (string.IsNullOrWhiteSpace(summary)) summary = title;
+                    if (summary.Length > 280) summary = summary[..280] + "...";
+
+                    // Skip if title already in database
+                    bool exists = await context.NewsArticles.AnyAsync(a => a.Title.ToLower() == title.ToLower());
+                    if (exists)
+                    {
+                        result.DuplicatesSkipped++;
+                        continue;
+                    }
+
+                    string slug = SlugHelper.GenerateSlug(title);
+                    if (await context.NewsArticles.AnyAsync(a => a.Slug == slug))
+                    {
+                        slug = $"{slug}-{Guid.NewGuid().ToString("n")[..4]}";
+                    }
+
+                    var article = new NewsArticle
+                    {
+                        Title = title,
+                        Slug = slug,
+                        Summary = summary,
+                        Content = summary,
+                        ImageUrl = !string.IsNullOrWhiteSpace(img) ? img : GetFallbackImageForRegion(cleanCity),
+                        CategoryId = category.Id,
+                        AuthorId = author.Id,
+                        IsPublished = true,
+                        PublishedDate = DateTime.UtcNow,
+                        CreatedAt = DateTime.UtcNow,
+                        IsLiveSynced = true,
+                        SourceName = source,
+                        SourceUrl = link,
+                        Region = cleanCity,
+                        LocationScope = "City/District"
+                    };
+
+                    context.NewsArticles.Add(article);
+                    result.NewArticlesAdded++;
+                    result.ImportedTitles.Add(title);
+                }
+
+                await context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Error fetching city news for {City}: {Msg}", cleanCity, ex.Message);
+                result.Errors.Add($"City news ({cleanCity}): {ex.Message}");
+            }
+
+            return result;
+        }
+
         public Task<LiveNewsSyncResult> SyncFromNewsApiAsync(string? apiKey = null, string? category = null)
         {
             return Task.FromResult(new LiveNewsSyncResult { Errors = { "NewsAPI sync is optional; RSS & REST converter feeds provide live news without API keys." } });

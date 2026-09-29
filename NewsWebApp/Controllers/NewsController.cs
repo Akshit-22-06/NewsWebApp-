@@ -3,14 +3,16 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq;
 using NewsWebApp.Models;
 using NewsWebApp.Repositories.Interfaces;
+using NewsWebApp.Services;
 using NewsWebApp.ViewModels;
 
 namespace NewsWebApp.Controllers
 {
     /// <summary>
-    /// Simple and clean controller for browsing, searching, reading news, bookmarks, likes, and comments.
+    /// Simple and clean controller for browsing, searching, reading news, bookmarks, likes, comments, and city-area live news.
     /// </summary>
     public class NewsController : Controller
     {
@@ -19,19 +21,22 @@ namespace NewsWebApp.Controllers
         private readonly ICommentRepository _commentRepo;
         private readonly IBookmarkRepository _bookmarkRepo;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ILiveNewsService _liveNewsService;
 
         public NewsController(
             INewsRepository newsRepo,
             ICategoryRepository categoryRepo,
             ICommentRepository commentRepo,
             IBookmarkRepository bookmarkRepo,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            ILiveNewsService liveNewsService)
         {
             _newsRepo = newsRepo;
             _categoryRepo = categoryRepo;
             _commentRepo = commentRepo;
             _bookmarkRepo = bookmarkRepo;
             _userManager = userManager;
+            _liveNewsService = liveNewsService;
         }
 
         // GET: /news
@@ -195,6 +200,57 @@ namespace NewsWebApp.Controllers
                 }
             }
             return RedirectToAction(nameof(Details), new { slug });
+        }
+
+        // GET: /news/city?city=Pune
+        public async Task<IActionResult> City(string? city)
+        {
+            var model = new CityNewsViewModel
+            {
+                City = city?.Trim()
+            };
+
+            if (!string.IsNullOrWhiteSpace(city))
+            {
+                string cleanCity = city.Trim();
+                if (cleanCity.Length > 1)
+                {
+                    cleanCity = char.ToUpper(cleanCity[0]) + cleanCity[1..].ToLower();
+                }
+                model.City = cleanCity;
+
+                // 1. Check existing articles in database
+                var existing = (await _newsRepo.GetCityArticlesAsync(cleanCity, 30)).ToList();
+
+                // 2. If fewer than 4 articles exist for this city, automatically fetch live breaking news on-demand!
+                if (existing.Count < 4)
+                {
+                    var syncResult = await _liveNewsService.FetchAndSyncCityNewsAsync(cleanCity);
+                    if (syncResult.NewArticlesAdded > 0)
+                    {
+                        model.IsLiveFetched = true;
+                        existing = (await _newsRepo.GetCityArticlesAsync(cleanCity, 30)).ToList();
+                    }
+                }
+
+                model.Articles = existing;
+                model.TotalFound = existing.Count;
+            }
+
+            return View(model);
+        }
+
+        // POST: /news/refreshcity
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RefreshCity(string city)
+        {
+            if (!string.IsNullOrWhiteSpace(city))
+            {
+                var result = await _liveNewsService.FetchAndSyncCityNewsAsync(city);
+                TempData["SuccessMessage"] = $"Fetched {result.NewArticlesAdded} live news headlines for {city}!";
+            }
+            return RedirectToAction(nameof(City), new { city });
         }
     }
 }

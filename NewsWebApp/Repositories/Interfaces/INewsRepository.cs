@@ -23,6 +23,7 @@ namespace NewsWebApp.Repositories.Interfaces
             string? search, int? categoryId, string? sortBy, int page, int pageSize, string? sourceType = null, string? timeRange = null, string? region = null, string? locationScope = null);
 
         Task<IEnumerable<string>> GetAvailableRegionsAsync();
+        Task<IEnumerable<NewsArticle>> GetCityArticlesAsync(string city, int count = 30);
         
         Task<(IEnumerable<NewsArticle> Articles, int TotalCount)> GetPagedAdminAsync(
             string? search, int? categoryId, bool? isPublished, int page, int pageSize, string? authorUserId = null);
