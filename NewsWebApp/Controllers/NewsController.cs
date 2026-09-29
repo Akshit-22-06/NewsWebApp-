@@ -222,8 +222,9 @@ namespace NewsWebApp.Controllers
                 // 1. Check existing articles in database
                 var existing = (await _newsRepo.GetCityArticlesAsync(cleanCity, 30)).ToList();
 
-                // 2. If fewer than 4 articles exist for this city, automatically fetch live breaking news on-demand!
-                if (existing.Count < 4)
+                // 2. If fewer than 3 articles or no articles from the past 48 hours, fetch live breaking news on-demand
+                bool hasRecent = existing.Any(a => a.PublishedDate.HasValue && a.PublishedDate.Value > DateTime.UtcNow.AddDays(-2));
+                if (existing.Count < 3 || !hasRecent)
                 {
                     var syncResult = await _liveNewsService.FetchAndSyncCityNewsAsync(cleanCity);
                     if (syncResult.NewArticlesAdded > 0)

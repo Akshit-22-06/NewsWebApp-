@@ -104,8 +104,31 @@
                         <td>
                             <span class="badge bg-secondary">@item.Category?.Name</span>
                         </td>
-                        <td class="small text-muted text-nowrap">
-                            @(item.PublishedDate?.ToString("MMM dd, yyyy") ?? "Recent")
+                        <td class="small text-nowrap">
+                            @if (item.PublishedDate.HasValue)
+                            {
+                                var diff = DateTime.UtcNow - item.PublishedDate.Value;
+                                if (diff.TotalMinutes < 60 && diff.TotalMinutes >= 0)
+                                {
+                                    <span class="badge bg-success">Just now</span>
+                                }
+                                else if (diff.TotalHours < 24 && diff.TotalHours >= 0)
+                                {
+                                    <span class="badge bg-primary">@($"{(int)diff.TotalHours}h ago")</span>
+                                }
+                                else if (diff.TotalDays < 2 && diff.TotalDays >= 0)
+                                {
+                                    <span class="badge bg-secondary">Yesterday</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">@item.PublishedDate.Value.ToString("MMM dd, yyyy")</span>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">Recent</span>
+                            }
                         </td>
                         <td class="text-end text-nowrap">
                             <a asp-controller="News" asp-action="Details" asp-route-slug="@item.Slug" class="btn btn-sm btn-outline-primary">
