@@ -22,6 +22,23 @@
                 </select>
             </div>
             <div class="col-auto">
+                <select name="region" class="form-select">
+                    <option value="" selected="@(string.IsNullOrEmpty(Model.Region) ? "selected" : null)">All Regions / Cities</option>
+                    @foreach (var reg in Model.AvailableRegions)
+                    {
+                        <option value="@reg" selected="@(string.Equals(Model.Region, reg, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@reg</option>
+                    }
+                </select>
+            </div>
+            <div class="col-auto">
+                <select name="locationScope" class="form-select">
+                    <option value="" selected="@(string.IsNullOrEmpty(Model.LocationScope) ? "selected" : null)">All Scopes</option>
+                    <option value="Global" selected="@(Model.LocationScope == "Global" ? "selected" : null)">Worldwide</option>
+                    <option value="National" selected="@(Model.LocationScope == "National" ? "selected" : null)">India National</option>
+                    <option value="City/District" selected="@(Model.LocationScope == "City/District" ? "selected" : null)">State / City / District</option>
+                </select>
+            </div>
+            <div class="col-auto">
                 <select name="sourceType" class="form-select">
                     <option value="" selected="@(string.IsNullOrEmpty(Model.SourceType) ? "selected" : null)">All Sources</option>
                     <option value="live" selected="@(Model.SourceType == "live" ? "selected" : null)">Live Wire Only</option>
@@ -47,10 +64,11 @@
 
 <p class="text-muted">Showing @Model.Articles.Count() of @Model.TotalArticles articles</p>
 
-<table class="table table-striped table-hover">
+<table class="table table-striped table-hover align-middle">
     <thead>
         <tr>
             <th>Title</th>
+            <th>Region / Scope</th>
             <th>Category</th>
             <th>Author / Source</th>
             <th>Published Date</th>
@@ -69,6 +87,13 @@
                 @if (item.IsLiveSynced)
                 {
                     <span class="badge bg-danger ms-1">Live</span>
+                }
+            </td>
+            <td>
+                <span class="badge bg-info text-dark">@(string.IsNullOrEmpty(item.Region) ? "Worldwide" : item.Region)</span>
+                @if (!string.IsNullOrEmpty(item.LocationScope) && item.LocationScope != "Global")
+                {
+                    <span class="badge bg-light text-muted border">@item.LocationScope</span>
                 }
             </td>
             <td>
@@ -119,6 +144,8 @@
                    asp-route-page="@(Model.CurrentPage - 1)"
                    asp-route-search="@Model.SearchTerm"
                    asp-route-categoryId="@Model.CategoryId"
+                   asp-route-region="@Model.Region"
+                   asp-route-locationScope="@Model.LocationScope"
                    asp-route-sourceType="@Model.SourceType"
                    asp-route-sortBy="@Model.SortBy">&laquo; Previous</a>
             </li>
@@ -129,6 +156,8 @@
                        asp-route-page="@i"
                        asp-route-search="@Model.SearchTerm"
                        asp-route-categoryId="@Model.CategoryId"
+                       asp-route-region="@Model.Region"
+                       asp-route-locationScope="@Model.LocationScope"
                        asp-route-sourceType="@Model.SourceType"
                        asp-route-sortBy="@Model.SortBy">@i</a>
                 </li>
@@ -138,6 +167,8 @@
                    asp-route-page="@(Model.CurrentPage + 1)"
                    asp-route-search="@Model.SearchTerm"
                    asp-route-categoryId="@Model.CategoryId"
+                   asp-route-region="@Model.Region"
+                   asp-route-locationScope="@Model.LocationScope"
                    asp-route-sourceType="@Model.SourceType"
                    asp-route-sortBy="@Model.SortBy">Next &raquo;</a>
             </li>

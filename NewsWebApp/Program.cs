@@ -25,6 +25,20 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     if (provider.Equals("Sqlite", StringComparison.OrdinalIgnoreCase))
     {
+        try
+        {
+            var sqliteBuilder = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder(connectionString);
+            if (!string.IsNullOrEmpty(sqliteBuilder.DataSource) && !sqliteBuilder.DataSource.Equals(":memory:", StringComparison.OrdinalIgnoreCase))
+            {
+                var dir = Path.GetDirectoryName(Path.GetFullPath(sqliteBuilder.DataSource));
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
+            }
+        }
+        catch { /* Fallback gracefully */ }
+
         options.UseSqlite(connectionString);
     }
     else
@@ -79,7 +93,14 @@ builder.Services.AddScoped<INewsletterRepository, NewsletterRepository>();
 builder.Services.AddScoped<INewsFeedSourceRepository, NewsFeedSourceRepository>();
 
 // Live News Ingestion Engine & Background Poller
-builder.Services.AddHttpClient("LiveNewsClient");
+builder.Services.AddHttpClient("LiveNewsClient", client =>
+{
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
+    client.Timeout = TimeSpan.FromSeconds(15);
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+});
 builder.Services.AddScoped<ILiveNewsService, LiveNewsService>();
 builder.Services.AddHostedService<LiveNewsSyncBackgroundService>();
 

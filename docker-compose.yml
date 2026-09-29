@@ -1,0 +1,21 @@
+services:
+  newswebapp:
+    build:
+      context: ./NewsWebApp
+      dockerfile: Dockerfile
+    container_name: newswebapp-app
+    restart: unless-stopped
+    ports:
+      - "5235:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - DatabaseProvider=Sqlite
+      - ConnectionStrings__DefaultConnection=Data Source=/app/data/newswebapp.db
+      - LiveNews__AutoSyncEnabled=true
+      - LiveNews__SyncIntervalMinutes=60
+    volumes:
+      - newsdata:/app/data
+
+volumes:
+  newsdata:
+    driver: local

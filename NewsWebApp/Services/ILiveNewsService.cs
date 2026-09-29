@@ -10,6 +10,8 @@ namespace NewsWebApp.Services
         public string CategorySlug { get; set; } = string.Empty;
         public string FeedUrl { get; set; } = string.Empty;
         public string DefaultImageUrl { get; set; } = string.Empty;
+        public string Region { get; set; } = "Worldwide";
+        public string LocationScope { get; set; } = "Global"; // Global, National, State, City/District
     }
 
     public class LiveNewsSyncResult
@@ -24,12 +26,14 @@ namespace NewsWebApp.Services
 
     /// <summary>
     /// Service for fetching, parsing, normalizing, and ingesting live breaking news from external APIs and RSS feeds.
-    /// Supports Hacker News API, GNews API, NewsAPI.org, and custom RSS/Atom feeds.
+    /// Supports Worldwide, Indian National, and State/City/District APIs (Delhi, Mumbai, Bengaluru, etc.).
     /// </summary>
     public interface ILiveNewsService
     {
         Task<LiveNewsSyncResult> SyncAllFeedsAsync();
-        Task<LiveNewsSyncResult> SyncFeedAsync(string feedUrl, string categorySlug, string sourceName);
+        Task<LiveNewsSyncResult> SyncFeedAsync(string feedUrl, string categorySlug, string sourceName, string region = "Worldwide", string locationScope = "Global");
+        Task<LiveNewsSyncResult> SyncIndianNationalAsync();
+        Task<LiveNewsSyncResult> SyncCityFeedsAsync(string? city = null);
         Task<LiveNewsSyncResult> SyncHackerNewsAsync();
         Task<LiveNewsSyncResult> SyncFromNewsApiAsync(string? apiKey = null, string? category = null);
         Task<LiveNewsSyncResult> SyncFromGNewsApiAsync(string? apiKey = null, string? category = null);

@@ -88,6 +88,8 @@ namespace NewsWebApp.Data
                 // Composite index for querying published & featured articles quickly
                 entity.HasIndex(a => new { a.IsPublished, a.PublishedDate });
                 entity.HasIndex(a => new { a.IsPublished, a.IsFeatured });
+                entity.HasIndex(a => a.Region);
+                entity.HasIndex(a => a.LocationScope);
 
                 // Relationship: 1 NewsArticle -> Many Comments (Cascade delete)
                 entity.HasMany(a => a.Comments)

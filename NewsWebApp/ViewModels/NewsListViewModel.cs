@@ -26,6 +26,9 @@ namespace NewsWebApp.ViewModels
         public string? SortBy { get; set; }
         public string? SourceType { get; set; }
         public string? TimeRange { get; set; }
+        public string? Region { get; set; }
+        public string? LocationScope { get; set; }
+        public IEnumerable<string> AvailableRegions { get; set; } = new List<string>();
 
         public IEnumerable<Category> Categories { get; set; } = new List<Category>();
     }

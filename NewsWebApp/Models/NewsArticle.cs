@@ -68,6 +68,14 @@ namespace NewsWebApp.Models
         [Display(Name = "Like Count")]
         public int LikeCount { get; set; } = 0;
 
+        [StringLength(100)]
+        [Display(Name = "Region / Location")]
+        public string Region { get; set; } = "Worldwide";
+
+        [StringLength(50)]
+        [Display(Name = "Location Scope")]
+        public string LocationScope { get; set; } = "Global";
+
         // Foreign Key & Navigation for Category
         [Required(ErrorMessage = "Please select a category.")]
         [Display(Name = "Category")]

@@ -28,6 +28,14 @@ namespace NewsWebApp.Models
         [StringLength(500)]
         public string? DefaultImageUrl { get; set; }
 
+        [StringLength(100)]
+        [Display(Name = "Region / Location")]
+        public string Region { get; set; } = "Worldwide";
+
+        [StringLength(50)]
+        [Display(Name = "Location Scope")]
+        public string LocationScope { get; set; } = "Global";
+
         public bool IsActive { get; set; } = true;
 
         public DateTime? LastSyncedAt { get; set; }

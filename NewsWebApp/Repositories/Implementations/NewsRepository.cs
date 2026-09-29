@@ -114,7 +114,7 @@ namespace NewsWebApp.Repositories.Implementations
         }
 
         public async Task<(IEnumerable<NewsArticle> Articles, int TotalCount)> GetPagedPublishedAsync(
-            string? search, int? categoryId, string? sortBy, int page, int pageSize, string? sourceType = null, string? timeRange = null)
+            string? search, int? categoryId, string? sortBy, int page, int pageSize, string? sourceType = null, string? timeRange = null, string? region = null, string? locationScope = null)
         {
             var query = _context.NewsArticles
                 .Where(a => a.IsPublished)
@@ -133,6 +133,16 @@ namespace NewsWebApp.Repositories.Implementations
                 query = query.Where(a => a.CategoryId == categoryId.Value);
             }
 
+            if (!string.IsNullOrWhiteSpace(region) && !region.Equals("All", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(a => a.Region.ToLower() == region.ToLower());
+            }
+
+            if (!string.IsNullOrWhiteSpace(locationScope) && !locationScope.Equals("All", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(a => a.LocationScope.ToLower() == locationScope.ToLower());
+            }
+
             if (sourceType == "live") query = query.Where(a => a.IsLiveSynced);
             if (sourceType == "editorial") query = query.Where(a => !a.IsLiveSynced);
 
@@ -148,6 +158,18 @@ namespace NewsWebApp.Repositories.Implementations
             var articles = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
             return (articles, totalCount);
+        }
+
+        public async Task<IEnumerable<string>> GetAvailableRegionsAsync()
+        {
+            var dbRegions = await _context.NewsArticles
+                .Where(a => a.IsPublished && !string.IsNullOrEmpty(a.Region))
+                .Select(a => a.Region)
+                .Distinct()
+                .ToListAsync();
+
+            var predefined = new List<string> { "Worldwide", "India", "Delhi", "Mumbai", "Bengaluru", "Chennai", "Hyderabad", "Kolkata" };
+            return predefined.Union(dbRegions).Distinct().ToList();
         }
 
         public async Task<(IEnumerable<NewsArticle> Articles, int TotalCount)> GetPagedAdminAsync(

@@ -19,6 +19,15 @@
         <dt class="col-sm-2">Category</dt>
         <dd class="col-sm-10">@article.Category?.Name</dd>
 
+        <dt class="col-sm-2">Region / Location</dt>
+        <dd class="col-sm-10">
+            <span class="badge bg-info text-dark">@(string.IsNullOrEmpty(article.Region) ? "Worldwide" : article.Region)</span>
+            @if (!string.IsNullOrEmpty(article.LocationScope) && article.LocationScope != "Global")
+            {
+                <span class="badge bg-light text-muted border">@article.LocationScope</span>
+            }
+        </dd>
+
         <dt class="col-sm-2">Author / Source</dt>
         <dd class="col-sm-10">@(article.Author?.DisplayName ?? article.SourceName ?? "Staff")</dd>
 

@@ -3,9 +3,27 @@
     ViewData["Title"] = "Home Page";
 }
 
-<div class="text-center mb-5">
+<div class="text-center mb-4">
     <h1 class="display-4">Welcome to NewsWebApp</h1>
-    <p class="lead text-muted">A clean ASP.NET Core MVC application with Entity Framework Core, Identity, and Live News Ingestion.</p>
+    <p class="lead text-muted">A complete ASP.NET Core MVC platform with Entity Framework Core, Identity, and Live News Ingestion.</p>
+</div>
+
+<!-- Geographic Quick Filters -->
+<div class="card mb-4 bg-light border-0 shadow-sm">
+    <div class="card-body py-3">
+        <div class="d-flex align-items-center flex-wrap gap-2">
+            <span class="fw-bold me-2">Browse by Location:</span>
+            <a asp-controller="News" asp-action="Index" class="btn btn-sm btn-outline-dark">All News</a>
+            <a asp-controller="News" asp-action="Index" asp-route-locationScope="Global" class="btn btn-sm btn-outline-primary">🌍 Worldwide</a>
+            <a asp-controller="News" asp-action="Index" asp-route-region="India" class="btn btn-sm btn-outline-success">🇮🇳 India National</a>
+            <a asp-controller="News" asp-action="Index" asp-route-region="Delhi" class="btn btn-sm btn-outline-danger">🏛️ Delhi NCR</a>
+            <a asp-controller="News" asp-action="Index" asp-route-region="Mumbai" class="btn btn-sm btn-outline-info">🏙️ Mumbai</a>
+            <a asp-controller="News" asp-action="Index" asp-route-region="Bengaluru" class="btn btn-sm btn-outline-primary">💻 Bengaluru</a>
+            <a asp-controller="News" asp-action="Index" asp-route-region="Chennai" class="btn btn-sm btn-outline-warning text-dark">🌆 Chennai</a>
+            <a asp-controller="News" asp-action="Index" asp-route-region="Hyderabad" class="btn btn-sm btn-outline-secondary">🏢 Hyderabad</a>
+            <a asp-controller="News" asp-action="Index" asp-route-region="Kolkata" class="btn btn-sm btn-outline-dark">🎭 Kolkata</a>
+        </div>
+    </div>
 </div>
 
 @if (Model.FeaturedArticles.Any())
@@ -14,6 +32,7 @@
     <div class="card mb-4">
         <div class="card-body">
             <span class="badge bg-primary mb-2">@featured.Category?.Name</span>
+            <span class="badge bg-info text-dark mb-2">@(string.IsNullOrEmpty(featured.Region) ? "Worldwide" : featured.Region)</span>
             @if (featured.IsLiveSynced)
             {
                 <span class="badge bg-danger mb-2">Live Wire</span>
@@ -54,6 +73,11 @@
         {
             <div class="mb-4 pb-3 border-bottom">
                 <span class="badge bg-secondary mb-1">@article.Category?.Name</span>
+                <span class="badge bg-info text-dark mb-1">@(string.IsNullOrEmpty(article.Region) ? "Worldwide" : article.Region)</span>
+                @if (article.IsLiveSynced)
+                {
+                    <span class="badge bg-danger mb-1">Live</span>
+                }
                 <h4>
                     <a asp-controller="News" asp-action="Details" asp-route-slug="@article.Slug" class="text-decoration-none text-dark">
                         @article.Title

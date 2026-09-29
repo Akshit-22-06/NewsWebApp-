@@ -394,10 +394,30 @@ namespace NewsWebApp.Controllers
         [HttpPost]
         [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SyncSpecificFeed(string feedUrl, string categorySlug, string sourceName)
+        public async Task<IActionResult> SyncIndianNews()
         {
-            var result = await _liveNewsService.SyncFeedAsync(feedUrl, categorySlug, sourceName);
-            TempData["SuccessMessage"] = $"Fetched {result.NewArticlesAdded} articles from {sourceName}.";
+            var result = await _liveNewsService.SyncIndianNationalAsync();
+            TempData["SuccessMessage"] = $"Indian National news sync complete! Added {result.NewArticlesAdded} articles ({result.DuplicatesSkipped} duplicates skipped).";
+            return RedirectToAction(nameof(LiveNews));
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SyncCityNews(string? city = null)
+        {
+            var result = await _liveNewsService.SyncCityFeedsAsync(city);
+            TempData["SuccessMessage"] = $"City / District news sync complete! Added {result.NewArticlesAdded} articles for {(string.IsNullOrEmpty(city) ? "all cities" : city)}.";
+            return RedirectToAction(nameof(LiveNews));
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SyncSpecificFeed(string feedUrl, string categorySlug, string sourceName, string region = "Worldwide", string locationScope = "Global")
+        {
+            var result = await _liveNewsService.SyncFeedAsync(feedUrl, categorySlug, sourceName, region, locationScope);
+            TempData["SuccessMessage"] = $"Fetched {result.NewArticlesAdded} articles from {sourceName} ({region}).";
             return RedirectToAction(nameof(LiveNews));
         }
 
@@ -414,7 +434,7 @@ namespace NewsWebApp.Controllers
         [HttpPost]
         [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddFeedSource(string name, string feedUrl, string categorySlug, string? defaultImageUrl)
+        public async Task<IActionResult> AddFeedSource(string name, string feedUrl, string categorySlug, string? defaultImageUrl, string? region = "Worldwide", string? locationScope = "Global")
         {
             await _feedRepo.AddAsync(new NewsFeedSource
             {
@@ -422,6 +442,8 @@ namespace NewsWebApp.Controllers
                 FeedUrl = feedUrl.Trim(),
                 CategorySlug = categorySlug.Trim().ToLower(),
                 DefaultImageUrl = defaultImageUrl?.Trim() ?? "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800",
+                Region = string.IsNullOrWhiteSpace(region) ? "Worldwide" : region.Trim(),
+                LocationScope = string.IsNullOrWhiteSpace(locationScope) ? "Global" : locationScope.Trim(),
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             });

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -17,8 +18,9 @@ using NewsWebApp.Utils;
 namespace NewsWebApp.Services
 {
     /// <summary>
-    /// Simple and clean service that fetches live news from RSS feeds and APIs.
-    /// Easy to understand for beginners: downloads XML, extracts headlines, and saves them to SQLite.
+    /// Simple and robust service that fetches live news from external APIs and RSS feeds.
+    /// Supports Worldwide, Indian National, and State/City/District (Delhi, Mumbai, Bengaluru, etc.) news.
+    /// Uses high-availability REST JSON parsing with direct XML fallback.
     /// </summary>
     public class LiveNewsService : ILiveNewsService
     {
@@ -27,14 +29,110 @@ namespace NewsWebApp.Services
         private readonly IConfiguration _configuration;
         private readonly ILogger<LiveNewsService> _logger;
 
-        // Default global RSS feeds
+        // Configured live feeds across Worldwide, Indian National, and City/District local sources
         private static readonly List<LiveNewsFeedSource> DefaultFeeds = new()
         {
-            new() { Name = "BBC World", CategorySlug = "world", FeedUrl = "https://feeds.bbci.co.uk/news/world/rss.xml", DefaultImageUrl = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800" },
-            new() { Name = "TechCrunch", CategorySlug = "technology", FeedUrl = "https://techcrunch.com/feed/", DefaultImageUrl = "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800" },
-            new() { Name = "BBC Business", CategorySlug = "business", FeedUrl = "https://feeds.bbci.co.uk/news/business/rss.xml", DefaultImageUrl = "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=800" },
-            new() { Name = "BBC Science", CategorySlug = "science", FeedUrl = "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml", DefaultImageUrl = "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=800" },
-            new() { Name = "BBC Sport", CategorySlug = "sports", FeedUrl = "https://feeds.bbci.co.uk/sport/rss.xml", DefaultImageUrl = "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800" }
+            // 1. Worldwide / Global Feeds
+            new() { 
+                Name = "BBC World", 
+                CategorySlug = "world", 
+                FeedUrl = "https://feeds.bbci.co.uk/news/world/rss.xml", 
+                DefaultImageUrl = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800",
+                Region = "Worldwide",
+                LocationScope = "Global"
+            },
+            new() { 
+                Name = "TechCrunch", 
+                CategorySlug = "technology", 
+                FeedUrl = "https://techcrunch.com/feed/", 
+                DefaultImageUrl = "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800",
+                Region = "Worldwide",
+                LocationScope = "Global"
+            },
+            new() { 
+                Name = "BBC Business", 
+                CategorySlug = "business", 
+                FeedUrl = "https://feeds.bbci.co.uk/news/business/rss.xml", 
+                DefaultImageUrl = "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=800",
+                Region = "Worldwide",
+                LocationScope = "Global"
+            },
+            new() { 
+                Name = "BBC Science", 
+                CategorySlug = "science", 
+                FeedUrl = "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml", 
+                DefaultImageUrl = "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=800",
+                Region = "Worldwide",
+                LocationScope = "Global"
+            },
+
+            // 2. India - National Feeds
+            new() { 
+                Name = "The Hindu National", 
+                CategorySlug = "world", 
+                FeedUrl = "https://www.thehindu.com/news/national/feeder/default.rss", 
+                DefaultImageUrl = "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=800",
+                Region = "India",
+                LocationScope = "National"
+            },
+            new() { 
+                Name = "Times of India Top Stories", 
+                CategorySlug = "world", 
+                FeedUrl = "https://timesofindia.indiatimes.com/rssfeedstopstories.cms", 
+                DefaultImageUrl = "https://images.unsplash.com/photo-1532375810709-75b1da00537c?w=800",
+                Region = "India",
+                LocationScope = "National"
+            },
+
+            // 3. India - State & City / District / Local Feeds
+            new() { 
+                Name = "The Hindu Delhi", 
+                CategorySlug = "world", 
+                FeedUrl = "https://www.thehindu.com/news/cities/delhi/feeder/default.rss", 
+                DefaultImageUrl = "https://images.unsplash.com/photo-1587474260584-136574528ed5?w=800",
+                Region = "Delhi",
+                LocationScope = "City/District"
+            },
+            new() { 
+                Name = "The Hindu Mumbai", 
+                CategorySlug = "business", 
+                FeedUrl = "https://www.thehindu.com/news/cities/mumbai/feeder/default.rss", 
+                DefaultImageUrl = "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=800",
+                Region = "Mumbai",
+                LocationScope = "City/District"
+            },
+            new() { 
+                Name = "The Hindu Bengaluru", 
+                CategorySlug = "technology", 
+                FeedUrl = "https://www.thehindu.com/news/cities/bangalore/feeder/default.rss", 
+                DefaultImageUrl = "https://images.unsplash.com/photo-1596176530529-78163a4f7af2?w=800",
+                Region = "Bengaluru",
+                LocationScope = "City/District"
+            },
+            new() { 
+                Name = "The Hindu Chennai", 
+                CategorySlug = "world", 
+                FeedUrl = "https://www.thehindu.com/news/cities/chennai/feeder/default.rss", 
+                DefaultImageUrl = "https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=800",
+                Region = "Chennai",
+                LocationScope = "City/District"
+            },
+            new() { 
+                Name = "The Hindu Hyderabad", 
+                CategorySlug = "technology", 
+                FeedUrl = "https://www.thehindu.com/news/cities/Hyderabad/feeder/default.rss", 
+                DefaultImageUrl = "https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=800",
+                Region = "Hyderabad",
+                LocationScope = "City/District"
+            },
+            new() { 
+                Name = "The Hindu Kolkata", 
+                CategorySlug = "world", 
+                FeedUrl = "https://www.thehindu.com/news/cities/kolkata/feeder/default.rss", 
+                DefaultImageUrl = "https://images.unsplash.com/photo-1558431382-27e303142255?w=800",
+                Region = "Kolkata",
+                LocationScope = "City/District"
+            }
         };
 
         public LiveNewsService(
@@ -51,95 +149,142 @@ namespace NewsWebApp.Services
 
         public IReadOnlyList<LiveNewsFeedSource> GetConfiguredFeedSources() => DefaultFeeds;
 
-        // Sync all default RSS feeds
+        // Sync all default Worldwide, National, and City feeds
         public async Task<LiveNewsSyncResult> SyncAllFeedsAsync()
         {
             var result = new LiveNewsSyncResult();
             foreach (var feed in DefaultFeeds)
             {
-                var feedResult = await SyncFeedAsync(feed.FeedUrl, feed.CategorySlug, feed.Name);
+                var feedResult = await SyncFeedAsync(feed.FeedUrl, feed.CategorySlug, feed.Name, feed.Region, feed.LocationScope);
                 result.TotalArticlesFetched += feedResult.TotalArticlesFetched;
                 result.NewArticlesAdded += feedResult.NewArticlesAdded;
                 result.DuplicatesSkipped += feedResult.DuplicatesSkipped;
                 result.ImportedTitles.AddRange(feedResult.ImportedTitles);
                 result.Errors.AddRange(feedResult.Errors);
+                await Task.Delay(400);
             }
             return result;
         }
 
-        // Sync a single RSS/Atom feed
-        public async Task<LiveNewsSyncResult> SyncFeedAsync(string feedUrl, string categorySlug, string sourceName)
+        // Sync India National feeds
+        public async Task<LiveNewsSyncResult> SyncIndianNationalAsync()
+        {
+            var result = new LiveNewsSyncResult();
+            var nationalFeeds = DefaultFeeds.Where(f => f.LocationScope == "National");
+            foreach (var feed in nationalFeeds)
+            {
+                var feedResult = await SyncFeedAsync(feed.FeedUrl, feed.CategorySlug, feed.Name, feed.Region, feed.LocationScope);
+                result.TotalArticlesFetched += feedResult.TotalArticlesFetched;
+                result.NewArticlesAdded += feedResult.NewArticlesAdded;
+                result.DuplicatesSkipped += feedResult.DuplicatesSkipped;
+                result.ImportedTitles.AddRange(feedResult.ImportedTitles);
+                result.Errors.AddRange(feedResult.Errors);
+                await Task.Delay(400);
+            }
+            return result;
+        }
+
+        // Sync City / District local feeds (e.g., Delhi, Mumbai, Bengaluru, etc.)
+        public async Task<LiveNewsSyncResult> SyncCityFeedsAsync(string? city = null)
+        {
+            var result = new LiveNewsSyncResult();
+            var cityFeeds = DefaultFeeds.Where(f => f.LocationScope == "City/District");
+            if (!string.IsNullOrWhiteSpace(city))
+            {
+                cityFeeds = cityFeeds.Where(f => f.Region.Equals(city, StringComparison.OrdinalIgnoreCase));
+            }
+
+            foreach (var feed in cityFeeds)
+            {
+                var feedResult = await SyncFeedAsync(feed.FeedUrl, feed.CategorySlug, feed.Name, feed.Region, feed.LocationScope);
+                result.TotalArticlesFetched += feedResult.TotalArticlesFetched;
+                result.NewArticlesAdded += feedResult.NewArticlesAdded;
+                result.DuplicatesSkipped += feedResult.DuplicatesSkipped;
+                result.ImportedTitles.AddRange(feedResult.ImportedTitles);
+                result.Errors.AddRange(feedResult.Errors);
+                await Task.Delay(400);
+            }
+            return result;
+        }
+
+        // Sync a single feed with Region and LocationScope tagging
+        public async Task<LiveNewsSyncResult> SyncFeedAsync(
+            string feedUrl, 
+            string categorySlug, 
+            string sourceName, 
+            string region = "Worldwide", 
+            string locationScope = "Global")
         {
             var result = new LiveNewsSyncResult();
             try
             {
-                var client = _httpClientFactory.CreateClient("LiveNewsClient");
-                var xmlString = await client.GetStringAsync(feedUrl);
-                var doc = XDocument.Parse(xmlString);
-
-                // Find items (RSS <item> or Atom <entry>)
-                var items = doc.Descendants().Where(e => e.Name.LocalName == "item" || e.Name.LocalName == "entry").Take(15);
+                var rawItems = await FetchFeedItemsAsync(feedUrl);
+                if (rawItems.Count == 0) return result;
 
                 using var scope = _scopeFactory.CreateScope();
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-                // Get category and default author
+                // Get category and author
                 var category = await context.Categories.FirstOrDefaultAsync(c => c.Slug == categorySlug) 
                                ?? await context.Categories.FirstOrDefaultAsync();
                 var author = await context.Authors.FirstOrDefaultAsync();
 
                 if (category == null || author == null) return result;
 
-                foreach (var item in items)
+                foreach (var item in rawItems.Take(12))
                 {
                     result.TotalArticlesFetched++;
 
-                    string title = item.Elements().FirstOrDefault(e => e.Name.LocalName == "title")?.Value?.Trim() ?? "";
-                    string link = item.Elements().FirstOrDefault(e => e.Name.LocalName == "link")?.Value?.Trim() ?? "";
-                    if (string.IsNullOrEmpty(link))
-                    {
-                        link = item.Elements().FirstOrDefault(e => e.Name.LocalName == "link")?.Attribute("href")?.Value ?? "";
-                    }
+                    if (string.IsNullOrWhiteSpace(item.Title) || item.Title.Length < 5) continue;
 
-                    string summary = item.Elements().FirstOrDefault(e => e.Name.LocalName == "description" || e.Name.LocalName == "summary")?.Value?.Trim() ?? "";
-                    summary = Regex.Replace(summary, "<.*?>", string.Empty); // Clean HTML tags
+                    // Clean and truncate summary
+                    string cleanSummary = Regex.Replace(item.Summary ?? "", "<.*?>", string.Empty).Trim();
+                    if (string.IsNullOrWhiteSpace(cleanSummary)) cleanSummary = item.Title;
+                    if (cleanSummary.Length > 280) cleanSummary = cleanSummary[..280] + "...";
 
-                    if (string.IsNullOrWhiteSpace(title) || title.Length < 5) continue;
+                    string cleanContent = Regex.Replace(item.Content ?? "", "<.*?>", string.Empty).Trim();
+                    if (string.IsNullOrWhiteSpace(cleanContent)) cleanContent = cleanSummary;
 
-                    // Skip if already in database
-                    bool exists = await context.NewsArticles.AnyAsync(a => a.Title.ToLower() == title.ToLower());
+                    // Skip if title already in database
+                    bool exists = await context.NewsArticles.AnyAsync(a => a.Title.ToLower() == item.Title.ToLower());
                     if (exists)
                     {
                         result.DuplicatesSkipped++;
                         continue;
                     }
 
-                    string slug = SlugHelper.GenerateSlug(title);
+                    string slug = SlugHelper.GenerateSlug(item.Title);
                     if (await context.NewsArticles.AnyAsync(a => a.Slug == slug))
                     {
                         slug = $"{slug}-{Guid.NewGuid().ToString("n")[..4]}";
                     }
 
+                    string imageUrl = !string.IsNullOrWhiteSpace(item.ImageUrl) && item.ImageUrl.StartsWith("http") 
+                        ? item.ImageUrl 
+                        : GetFallbackImageForRegion(region);
+
                     var article = new NewsArticle
                     {
-                        Title = title,
+                        Title = item.Title,
                         Slug = slug,
-                        Summary = summary.Length > 280 ? summary[..280] + "..." : (string.IsNullOrWhiteSpace(summary) ? title : summary),
-                        Content = summary.Length > 0 ? summary : title,
-                        ImageUrl = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800",
+                        Summary = cleanSummary,
+                        Content = cleanContent,
+                        ImageUrl = imageUrl,
                         CategoryId = category.Id,
                         AuthorId = author.Id,
                         IsPublished = true,
-                        PublishedDate = DateTime.UtcNow,
+                        PublishedDate = item.PublishedDate ?? DateTime.UtcNow,
                         CreatedAt = DateTime.UtcNow,
                         IsLiveSynced = true,
                         SourceName = sourceName,
-                        SourceUrl = link
+                        SourceUrl = item.Link,
+                        Region = string.IsNullOrWhiteSpace(region) ? "Worldwide" : region,
+                        LocationScope = string.IsNullOrWhiteSpace(locationScope) ? "Global" : locationScope
                     };
 
                     context.NewsArticles.Add(article);
                     result.NewArticlesAdded++;
-                    result.ImportedTitles.Add(title);
+                    result.ImportedTitles.Add(item.Title);
                 }
 
                 await context.SaveChangesAsync();
@@ -151,6 +296,91 @@ namespace NewsWebApp.Services
             }
 
             return result;
+        }
+
+        // Dual-resilient feed fetcher: tries rss2json API first, falls back to direct XML parsing
+        private async Task<List<ParsedFeedItem>> FetchFeedItemsAsync(string feedUrl)
+        {
+            var items = new List<ParsedFeedItem>();
+            var client = _httpClientFactory.CreateClient("LiveNewsClient");
+
+            // 1. Try JSON REST API via rss2json
+            try
+            {
+                string apiUrl = $"https://api.rss2json.com/v1/api.json?rss_url={Uri.EscapeDataString(feedUrl)}";
+                var response = await client.GetFromJsonAsync<Rss2JsonResponse>(apiUrl);
+                if (response != null && response.status == "ok" && response.items != null && response.items.Count > 0)
+                {
+                    foreach (var i in response.items)
+                    {
+                        DateTime? pub = null;
+                        if (DateTime.TryParse(i.pubDate, out var pDate)) pub = pDate;
+
+                        string? img = i.thumbnail;
+                        if (string.IsNullOrWhiteSpace(img) && i.enclosure != null && !string.IsNullOrWhiteSpace(i.enclosure.link))
+                        {
+                            img = i.enclosure.link;
+                        }
+
+                        items.Add(new ParsedFeedItem
+                        {
+                            Title = i.title?.Trim() ?? "",
+                            Link = i.link?.Trim() ?? "",
+                            Summary = i.description?.Trim() ?? "",
+                            Content = i.content?.Trim() ?? i.description?.Trim() ?? "",
+                            ImageUrl = img,
+                            PublishedDate = pub
+                        });
+                    }
+                    return items;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug("rss2json fetch skipped: {Msg}. Trying direct RSS XML...", ex.Message);
+            }
+
+            // 2. Direct XML RSS/Atom fallback
+            try
+            {
+                var xmlString = await client.GetStringAsync(feedUrl);
+                var doc = XDocument.Parse(xmlString);
+                var xmlItems = doc.Descendants().Where(e => e.Name.LocalName == "item" || e.Name.LocalName == "entry").Take(15);
+
+                foreach (var x in xmlItems)
+                {
+                    string title = x.Elements().FirstOrDefault(e => e.Name.LocalName == "title")?.Value?.Trim() ?? "";
+                    string link = x.Elements().FirstOrDefault(e => e.Name.LocalName == "link")?.Value?.Trim() ?? "";
+                    if (string.IsNullOrEmpty(link))
+                    {
+                        link = x.Elements().FirstOrDefault(e => e.Name.LocalName == "link")?.Attribute("href")?.Value ?? "";
+                    }
+
+                    string summary = x.Elements().FirstOrDefault(e => e.Name.LocalName == "description" || e.Name.LocalName == "summary")?.Value?.Trim() ?? "";
+
+                    DateTime? pub = null;
+                    var pubString = x.Elements().FirstOrDefault(e => e.Name.LocalName == "pubDate" || e.Name.LocalName == "updated")?.Value;
+                    if (DateTime.TryParse(pubString, out var pDate)) pub = pDate;
+
+                    string? img = x.Elements().FirstOrDefault(e => e.Name.LocalName == "enclosure")?.Attribute("url")?.Value;
+
+                    items.Add(new ParsedFeedItem
+                    {
+                        Title = title,
+                        Link = link,
+                        Summary = summary,
+                        Content = summary,
+                        ImageUrl = img,
+                        PublishedDate = pub
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Direct XML parsing also failed for {Url}: {Msg}", feedUrl, ex.Message);
+            }
+
+            return items;
         }
 
         // Sync top stories from Hacker News Firebase REST API
@@ -204,7 +434,9 @@ namespace NewsWebApp.Services
                         CreatedAt = DateTime.UtcNow,
                         IsLiveSynced = true,
                         SourceName = "Hacker News",
-                        SourceUrl = story.url ?? $"https://news.ycombinator.com/item?id={id}"
+                        SourceUrl = story.url ?? $"https://news.ycombinator.com/item?id={id}",
+                        Region = "Worldwide",
+                        LocationScope = "Global"
                     };
 
                     context.NewsArticles.Add(article);
@@ -229,7 +461,7 @@ namespace NewsWebApp.Services
             var source = await context.NewsFeedSources.FindAsync(sourceId);
             if (source == null) return new LiveNewsSyncResult { Errors = { "Feed source not found" } };
 
-            var result = await SyncFeedAsync(source.FeedUrl, source.CategorySlug, source.Name);
+            var result = await SyncFeedAsync(source.FeedUrl, source.CategorySlug, source.Name, source.Region, source.LocationScope);
             source.LastSyncedAt = DateTime.UtcNow;
             source.TotalArticlesImported += result.NewArticlesAdded;
             await context.SaveChangesAsync();
@@ -239,12 +471,79 @@ namespace NewsWebApp.Services
 
         public Task<LiveNewsSyncResult> SyncFromNewsApiAsync(string? apiKey = null, string? category = null)
         {
-            return Task.FromResult(new LiveNewsSyncResult { Errors = { "NewsAPI sync is optional; RSS feeds provide live news without API keys." } });
+            return Task.FromResult(new LiveNewsSyncResult { Errors = { "NewsAPI sync is optional; RSS & REST converter feeds provide live news without API keys." } });
         }
 
         public Task<LiveNewsSyncResult> SyncFromGNewsApiAsync(string? apiKey = null, string? category = null)
         {
-            return Task.FromResult(new LiveNewsSyncResult { Errors = { "GNews API sync is optional; RSS feeds provide live news without API keys." } });
+            return Task.FromResult(new LiveNewsSyncResult { Errors = { "GNews API sync is optional; RSS & REST converter feeds provide live news without API keys." } });
+        }
+
+        private static string GetFallbackImageForRegion(string region)
+        {
+            return region switch
+            {
+                "India" => "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=800",
+                "Delhi" => "https://images.unsplash.com/photo-1587474260584-136574528ed5?w=800",
+                "Mumbai" => "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=800",
+                "Bengaluru" => "https://images.unsplash.com/photo-1596176530529-78163a4f7af2?w=800",
+                "Chennai" => "https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=800",
+                "Hyderabad" => "https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=800",
+                "Kolkata" => "https://images.unsplash.com/photo-1558431382-27e303142255?w=800",
+                _ => "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800"
+            };
+        }
+
+        private class ParsedFeedItem
+        {
+            public string Title { get; set; } = string.Empty;
+            public string Link { get; set; } = string.Empty;
+            public string Summary { get; set; } = string.Empty;
+            public string Content { get; set; } = string.Empty;
+            public string? ImageUrl { get; set; }
+            public DateTime? PublishedDate { get; set; }
+        }
+
+        private class Rss2JsonResponse
+        {
+            [JsonPropertyName("status")]
+            public string? status { get; set; }
+
+            [JsonPropertyName("items")]
+            public List<Rss2JsonItem>? items { get; set; }
+        }
+
+        private class Rss2JsonItem
+        {
+            [JsonPropertyName("title")]
+            public string? title { get; set; }
+
+            [JsonPropertyName("pubDate")]
+            public string? pubDate { get; set; }
+
+            [JsonPropertyName("link")]
+            public string? link { get; set; }
+
+            [JsonPropertyName("author")]
+            public string? author { get; set; }
+
+            [JsonPropertyName("thumbnail")]
+            public string? thumbnail { get; set; }
+
+            [JsonPropertyName("description")]
+            public string? description { get; set; }
+
+            [JsonPropertyName("content")]
+            public string? content { get; set; }
+
+            [JsonPropertyName("enclosure")]
+            public Rss2JsonEnclosure? enclosure { get; set; }
+        }
+
+        private class Rss2JsonEnclosure
+        {
+            [JsonPropertyName("link")]
+            public string? link { get; set; }
         }
 
         private class HackerNewsItem

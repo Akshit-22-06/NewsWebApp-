@@ -35,11 +35,18 @@ namespace NewsWebApp.Controllers
         }
 
         // GET: /news
-        public async Task<IActionResult> Index(string? search, int? categoryId, string? sortBy, string? sourceType, int page = 1)
+        public async Task<IActionResult> Index(
+            string? search, 
+            int? categoryId, 
+            string? sortBy, 
+            string? sourceType, 
+            string? region, 
+            string? locationScope, 
+            int page = 1)
         {
             const int pageSize = 9;
             var (articles, totalCount) = await _newsRepo.GetPagedPublishedAsync(
-                search, categoryId, sortBy, page, pageSize, sourceType);
+                search, categoryId, sortBy, page, pageSize, sourceType, null, region, locationScope);
 
             string? categoryName = null;
             if (categoryId.HasValue)
@@ -47,6 +54,8 @@ namespace NewsWebApp.Controllers
                 var cat = await _categoryRepo.GetByIdAsync(categoryId.Value);
                 categoryName = cat?.Name;
             }
+
+            var availableRegions = await _newsRepo.GetAvailableRegionsAsync();
 
             var model = new NewsListViewModel
             {
@@ -59,6 +68,9 @@ namespace NewsWebApp.Controllers
                 CategoryName = categoryName,
                 SortBy = sortBy,
                 SourceType = sourceType,
+                Region = region,
+                LocationScope = locationScope,
+                AvailableRegions = availableRegions,
                 Categories = await _categoryRepo.GetAllAsync()
             };
 
@@ -71,7 +83,7 @@ namespace NewsWebApp.Controllers
             var category = await _categoryRepo.GetBySlugAsync(slug);
             if (category == null) return NotFound();
 
-            return await Index(null, category.Id, sortBy, null, page);
+            return await Index(null, category.Id, sortBy, null, null, null, page);
         }
 
         // GET: /news/details/{slug}
