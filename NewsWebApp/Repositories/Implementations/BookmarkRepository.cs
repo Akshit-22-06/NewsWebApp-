@@ -60,11 +60,11 @@ namespace NewsWebApp.Repositories.Implementations
             return await _context.ArticleBookmarks
                 .AsNoTracking()
                 .Where(b => b.UserId == userId)
+                .Include(b => b.NewsArticle).ThenInclude(a => a!.Category)
+                .Include(b => b.NewsArticle).ThenInclude(a => a!.Author)
                 .OrderByDescending(b => b.CreatedAt)
                 .Select(b => b.NewsArticle!)
                 .Where(a => a != null && a.IsPublished)
-                .Include(a => a.Category)
-                .Include(a => a.Author)
                 .ToListAsync();
         }
 

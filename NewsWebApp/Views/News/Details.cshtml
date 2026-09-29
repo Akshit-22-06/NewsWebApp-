@@ -44,8 +44,16 @@
                 <form asp-action="ToggleBookmark" asp-route-id="@article.Id" method="post" class="d-inline ms-1">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
-                    <button type="submit" class="btn btn-sm btn-outline-secondary">@(Model.IsBookmarked ? "Remove Bookmark" : "Save for Later")</button>
+                    <button type="submit" class="btn btn-sm @(Model.IsBookmarked ? "btn-warning text-dark" : "btn-outline-secondary")">
+                        @(Model.IsBookmarked ? "★ Bookmarked (Remove)" : "☆ Bookmark")
+                    </button>
                 </form>
+            }
+            else
+            {
+                <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path" class="btn btn-sm btn-outline-secondary ms-1">
+                    ☆ Bookmark
+                </a>
             }
         </dd>
 

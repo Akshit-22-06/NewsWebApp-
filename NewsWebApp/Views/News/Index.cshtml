@@ -86,8 +86,24 @@
             <td>
                 @item.LikeCount
             </td>
-            <td>
+            <td class="text-end text-nowrap">
                 <a asp-action="Details" asp-route-slug="@item.Slug" class="btn btn-sm btn-outline-primary">Details</a>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <form asp-action="ToggleBookmark" asp-route-id="@item.Id" method="post" class="d-inline ms-1">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                        <button type="submit" class="btn btn-sm btn-outline-secondary" title="Save to bookmarks">
+                            Bookmark
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path@Context.Request.QueryString" class="btn btn-sm btn-outline-secondary" title="Login to bookmark">
+                        Bookmark
+                    </a>
+                }
             </td>
         </tr>
 }

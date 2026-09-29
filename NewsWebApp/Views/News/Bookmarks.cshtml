@@ -1,17 +1,17 @@
 @model NewsWebApp.ViewModels.BookmarkListViewModel
 
 @{
-    ViewData["Title"] = "Saved Articles";
+    ViewData["Title"] = "My Bookmarks";
 }
 
-<h1>Saved Articles</h1>
+<h1>My Bookmarks</h1>
 
-<p class="text-muted">Your personal saved reading list (@Model.TotalBookmarks items)</p>
+<p class="text-muted">Your bookmarked news articles (@Model.TotalBookmarks items)</p>
 
 @if (!Model.BookmarkedArticles.Any())
 {
     <div class="alert alert-info">
-        You have no saved articles. Browse the <a asp-action="Index">news articles</a> to save stories for later.
+        You have no bookmarked articles yet. Browse <a asp-action="Index">news articles</a> to bookmark stories for later.
     </div>
 }
 else
