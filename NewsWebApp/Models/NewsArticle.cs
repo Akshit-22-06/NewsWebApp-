@@ -62,19 +62,17 @@ namespace NewsWebApp.Models
         [Url(ErrorMessage = "Please enter a valid URL.")]
         public string? SourceUrl { get; set; }
 
-        [Display(Name = "Is Live Synced")]
-        public bool IsLiveSynced { get; set; } = false;
-
         [Display(Name = "Like Count")]
         public int LikeCount { get; set; } = 0;
 
-        [StringLength(100)]
-        [Display(Name = "Region / Location")]
-        public string Region { get; set; } = "Worldwide";
+        [Required]
+        [StringLength(20)]
+        [Display(Name = "Moderation Status")]
+        public string Status { get; set; } = ArticleStatus.Pending;
 
-        [StringLength(50)]
-        [Display(Name = "Location Scope")]
-        public string LocationScope { get; set; } = "Global";
+        [StringLength(500)]
+        [Display(Name = "Rejection Reason")]
+        public string? RejectionReason { get; set; }
 
         // Foreign Key & Navigation for Category
         [Required(ErrorMessage = "Please select a category.")]
@@ -97,5 +95,15 @@ namespace NewsWebApp.Models
 
         // Navigation property for Bookmarks
         public virtual ICollection<ArticleBookmark> Bookmarks { get; set; } = new List<ArticleBookmark>();
+    }
+
+    /// <summary>
+    /// Constants for article moderation workflow statuses.
+    /// </summary>
+    public static class ArticleStatus
+    {
+        public const string Pending = "Pending";
+        public const string Approved = "Approved";
+        public const string Rejected = "Rejected";
     }
 }

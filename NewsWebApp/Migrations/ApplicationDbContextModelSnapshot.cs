@@ -225,6 +225,32 @@ namespace NewsWebApp.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("NewsWebApp.Models.ArticleBookmark", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("NewsArticleId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NewsArticleId");
+
+                    b.HasIndex("UserId", "NewsArticleId")
+                        .IsUnique();
+
+                    b.ToTable("ArticleBookmarks");
+                });
+
             modelBuilder.Entity("NewsWebApp.Models.Author", b =>
                 {
                     b.Property<int>("Id")
@@ -340,13 +366,17 @@ namespace NewsWebApp.Migrations
                     b.Property<bool>("IsFeatured")
                         .HasColumnType("INTEGER");
 
-                    b.Property<bool>("IsLiveSynced")
-                        .HasColumnType("INTEGER");
-
                     b.Property<bool>("IsPublished")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("LikeCount")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime?>("PublishedDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Slug")
@@ -361,6 +391,13 @@ namespace NewsWebApp.Migrations
                     b.Property<string>("SourceUrl")
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("Pending");
 
                     b.Property<string>("Summary")
                         .IsRequired()
@@ -387,11 +424,40 @@ namespace NewsWebApp.Migrations
                     b.HasIndex("Slug")
                         .IsUnique();
 
+                    b.HasIndex("Status");
+
                     b.HasIndex("IsPublished", "IsFeatured");
 
                     b.HasIndex("IsPublished", "PublishedDate");
 
+                    b.HasIndex("IsPublished", "Status", "PublishedDate");
+
                     b.ToTable("NewsArticles");
+                });
+
+            modelBuilder.Entity("NewsWebApp.Models.NewsletterSubscriber", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("SubscribedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.ToTable("NewsletterSubscribers");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -443,6 +509,25 @@ namespace NewsWebApp.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("NewsWebApp.Models.ArticleBookmark", b =>
+                {
+                    b.HasOne("NewsWebApp.Models.NewsArticle", "NewsArticle")
+                        .WithMany("Bookmarks")
+                        .HasForeignKey("NewsArticleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NewsWebApp.Models.ApplicationUser", "User")
+                        .WithMany("Bookmarks")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("NewsArticle");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("NewsWebApp.Models.Author", b =>
@@ -498,6 +583,8 @@ namespace NewsWebApp.Migrations
                 {
                     b.Navigation("Author");
 
+                    b.Navigation("Bookmarks");
+
                     b.Navigation("Comments");
                 });
 
@@ -513,6 +600,8 @@ namespace NewsWebApp.Migrations
 
             modelBuilder.Entity("NewsWebApp.Models.NewsArticle", b =>
                 {
+                    b.Navigation("Bookmarks");
+
                     b.Navigation("Comments");
                 });
 #pragma warning restore 612, 618

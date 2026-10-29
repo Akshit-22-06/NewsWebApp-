@@ -1,0 +1,121 @@
+@model NewsWebApp.Models.NewsArticle
+@{
+    ViewData["Title"] = $"Review Article: {Model.Title}";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <div>
+        <h1 class="h2 mb-1">Article Review</h1>
+        <p class="text-muted mb-0">Evaluate submission by <strong>@(Model.Author?.DisplayName ?? "Author")</strong> for public publication.</p>
+    </div>
+    <div>
+        <a asp-action="Articles" class="btn btn-outline-secondary">
+            Back to Articles
+        </a>
+    </div>
+</div>
+
+<partial name="_AdminNav" />
+
+<div class="row g-4 mt-1">
+    <!-- Article Preview Column -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <span class="badge bg-secondary">@(Model.Category?.Name ?? "Uncategorized")</span>
+                <div>
+                    @if (Model.Status == NewsWebApp.Models.ArticleStatus.Approved)
+                    {
+                        <span class="badge bg-success">Status: Approved</span>
+                    }
+                    else if (Model.Status == NewsWebApp.Models.ArticleStatus.Rejected)
+                    {
+                        <span class="badge bg-danger">Status: Rejected</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning text-dark">Status: Pending Review</span>
+                    }
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.ImageUrl))
+            {
+                <img src="@Model.ImageUrl" alt="@Model.Title" class="card-img-top" style="max-height: 380px; object-fit: cover;" onerror="this.style.display='none';" />
+            }
+
+            <div class="card-body p-4">
+                <h2 class="h3 mb-3 fw-bold">@Model.Title</h2>
+
+                <div class="text-muted small mb-3 pb-3 border-bottom d-flex gap-3">
+                    <span>Author: <strong>@(Model.Author?.DisplayName ?? "Staff")</strong></span>
+                    <span>Submitted: @Model.CreatedAt.ToString("MMMM dd, yyyy HH:mm") UTC</span>
+                    <span>Slug: <code>@Model.Slug</code></span>
+                </div>
+
+                <div class="lead bg-light p-3 rounded mb-4 border-start border-4 border-primary">
+                    <h6 class="text-uppercase text-muted small fw-bold mb-1">Summary</h6>
+                    <p class="mb-0">@Model.Summary</p>
+                </div>
+
+                <h6 class="text-uppercase text-muted small fw-bold mb-2">Full Content</h6>
+                <div class="article-content" style="white-space: pre-wrap; line-height: 1.8;">
+                    @Model.Content
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Review Decision Column -->
+    <div class="col-lg-4">
+        <!-- Moderation Decision Card -->
+        <div class="card shadow-sm mb-4 border-primary">
+            <div class="card-header bg-primary text-white py-3">
+                <h5 class="mb-0 fw-bold">Editorial Decision</h5>
+            </div>
+            <div class="card-body p-4">
+                <p class="text-muted small mb-4">
+                    Approving will publish this story to the live website immediately. Rejecting will hide the article and send your feedback back to the author.
+                </p>
+
+                <!-- 1. APPROVE BUTTON -->
+                <form asp-controller="Admin" asp-action="ApproveArticle" asp-route-id="@Model.Id" method="post" class="mb-4">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-success w-100 py-2 fw-semibold" onclick="return confirm('Approve this article and make it publicly visible?');">
+                        Approve and Publish
+                    </button>
+                </form>
+
+                <hr />
+
+                <!-- 2. REJECT FORM -->
+                <h6 class="fw-bold text-danger mb-2">Reject with Feedback</h6>
+                <form asp-controller="Admin" asp-action="RejectArticle" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label for="rejectionReason" class="form-label small text-muted">Rejection Reason / Guidance for Author</label>
+                        <textarea id="rejectionReason" name="rejectionReason" class="form-control" rows="4" placeholder="Explain what changes the author needs to make..." required>@Model.RejectionReason</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-outline-danger w-100 py-2 fw-semibold" onclick="return confirm('Reject this article and send feedback to the author?');">
+                        Reject Article
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Author Information Card -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold">Author Information</h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-1"><strong>Name:</strong> @(Model.Author?.DisplayName ?? "Staff")</p>
+                <p class="mb-1 text-muted small"><strong>Bio:</strong> @(Model.Author?.Bio ?? "No bio provided")</p>
+                @if (Model.Author?.User != null)
+                {
+                    <p class="mb-0 text-muted small"><strong>Email:</strong> @Model.Author.User.Email</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>

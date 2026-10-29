@@ -64,7 +64,7 @@ namespace NewsWebApp.Repositories.Implementations
                 .Include(b => b.NewsArticle).ThenInclude(a => a!.Author)
                 .OrderByDescending(b => b.CreatedAt)
                 .Select(b => b.NewsArticle!)
-                .Where(a => a != null && a.IsPublished)
+                .Where(a => a != null && a.IsPublished && a.Status == ArticleStatus.Approved)
                 .ToListAsync();
         }
 

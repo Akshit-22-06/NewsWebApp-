@@ -28,6 +28,9 @@ namespace NewsWebApp.ViewModels
         [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; } = string.Empty;
 
+        [Display(Name = "I want to publish articles on NewsBase and become an Author")]
+        public bool WantToBeAuthor { get; set; }
+
         public string? ReturnUrl { get; set; }
     }
 }

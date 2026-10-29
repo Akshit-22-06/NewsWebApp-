@@ -1,182 +1,119 @@
-@model NewsWebApp.ViewModels.NewsListViewModel
+@model List<NewsWebApp.Models.NewsDto>
 
 @{
     ViewData["Title"] = "News Articles";
+    var searchTerm = ViewBag.SearchTerm as string;
+    var selectedCategory = ViewBag.SelectedCategory as string;
+    var selectedCountry = ViewBag.SelectedCountry as string;
+    var selectedLanguage = ViewBag.SelectedLanguage as string;
+    var errorMessage = ViewBag.ErrorMessage as string;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="mb-3">
     <h1 class="mb-0">News Articles</h1>
-    <a asp-action="City" class="btn btn-outline-primary">
-        📍 Find Your City News &rarr;
-    </a>
 </div>
 
-<div class="row mb-3">
+<!-- Search and Filter Form -->
+<div class="row mb-4">
     <div class="col-md-12">
         <form asp-controller="News" asp-action="Index" method="get" class="row g-2 align-items-center">
-            <div class="col-auto">
-                <input type="text" name="search" value="@Model.SearchTerm" class="form-control" placeholder="Search keywords..." />
+            <div class="col-md-3 col-sm-6">
+                <input type="text" name="search" value="@searchTerm" class="form-control" placeholder="Search keywords..." />
             </div>
-            <div class="col-auto">
-                <select name="categoryId" class="form-select">
+            <div class="col-md-3 col-sm-6">
+                <select name="category" class="form-select">
                     <option value="">All Categories</option>
-                    @foreach (var cat in Model.Categories)
-                    {
-                        <option value="@cat.Id" selected="@(Model.CategoryId == cat.Id ? "selected" : null)">@cat.Name</option>
-                    }
+                    <!option value="technology" @(string.Equals(selectedCategory, "technology", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Technology</!option>
+                    <!option value="business" @(string.Equals(selectedCategory, "business", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Business</!option>
+                    <!option value="sports" @(string.Equals(selectedCategory, "sports", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Sports</!option>
+                    <!option value="entertainment" @(string.Equals(selectedCategory, "entertainment", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Entertainment</!option>
+                    <!option value="science" @(string.Equals(selectedCategory, "science", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Science</!option>
+                    <!option value="health" @(string.Equals(selectedCategory, "health", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Health</!option>
+                    <!option value="politics" @(string.Equals(selectedCategory, "politics", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Politics</!option>
+                    <!option value="world" @(string.Equals(selectedCategory, "world", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>World</!option>
                 </select>
             </div>
-            <div class="col-auto">
-                <select name="region" class="form-select">
-                    <option value="" selected="@(string.IsNullOrEmpty(Model.Region) ? "selected" : null)">All Regions / Cities</option>
-                    @foreach (var reg in Model.AvailableRegions)
-                    {
-                        <option value="@reg" selected="@(string.Equals(Model.Region, reg, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@reg</option>
-                    }
+            <div class="col-md-2 col-sm-6">
+                <select name="country" class="form-select">
+                    <option value="">All Countries</option>
+                    <!option value="IN" @(string.Equals(selectedCountry, "IN", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>India</!option>
+                    <!option value="US" @(string.Equals(selectedCountry, "US", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>United States</!option>
+                    <!option value="GB" @(string.Equals(selectedCountry, "GB", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>United Kingdom</!option>
                 </select>
             </div>
-            <div class="col-auto">
-                <select name="locationScope" class="form-select">
-                    <option value="" selected="@(string.IsNullOrEmpty(Model.LocationScope) ? "selected" : null)">All Scopes</option>
-                    <option value="Global" selected="@(Model.LocationScope == "Global" ? "selected" : null)">Worldwide</option>
-                    <option value="National" selected="@(Model.LocationScope == "National" ? "selected" : null)">India National</option>
-                    <option value="City/District" selected="@(Model.LocationScope == "City/District" ? "selected" : null)">State / City / District</option>
+            <div class="col-md-2 col-sm-6">
+                <select name="language" class="form-select">
+                    <option value="">All Languages</option>
+                    <!option value="en" @(string.Equals(selectedLanguage, "en", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>English</!option>
+                    <!option value="hi" @(string.Equals(selectedLanguage, "hi", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Hindi</!option>
+                    <!option value="es" @(string.Equals(selectedLanguage, "es", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Spanish</!option>
                 </select>
             </div>
-            <div class="col-auto">
-                <select name="sourceType" class="form-select">
-                    <option value="" selected="@(string.IsNullOrEmpty(Model.SourceType) ? "selected" : null)">All Sources</option>
-                    <option value="live" selected="@(Model.SourceType == "live" ? "selected" : null)">Live Wire Only</option>
-                    <option value="editorial" selected="@(Model.SourceType == "editorial" ? "selected" : null)">Editorial Only</option>
-                </select>
-            </div>
-            <div class="col-auto">
-                <select name="sortBy" class="form-select">
-                    <option value="latest" selected="@(Model.SortBy == "latest" || string.IsNullOrEmpty(Model.SortBy) ? "selected" : null)">Latest</option>
-                    <option value="popular" selected="@(Model.SortBy == "popular" ? "selected" : null)">Most Viewed</option>
-                    <option value="liked" selected="@(Model.SortBy == "liked" ? "selected" : null)">Most Liked</option>
-                    <option value="discussed" selected="@(Model.SortBy == "discussed" ? "selected" : null)">Most Discussed</option>
-                    <option value="oldest" selected="@(Model.SortBy == "oldest" ? "selected" : null)">Oldest</option>
-                </select>
-            </div>
-            <div class="col-auto">
-                <button type="submit" class="btn btn-primary">Filter</button>
+            <div class="col-md-2 col-sm-12 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-grow-1">Filter</button>
                 <a asp-action="Index" class="btn btn-secondary">Reset</a>
             </div>
         </form>
     </div>
 </div>
 
-<p class="text-muted">Showing @Model.Articles.Count() of @Model.TotalArticles articles</p>
-
-<table class="table table-striped table-hover align-middle">
-    <thead>
-        <tr>
-            <th>Title</th>
-            <th>Region / Scope</th>
-            <th>Category</th>
-            <th>Author / Source</th>
-            <th>Published Date</th>
-            <th>Views</th>
-            <th>Likes</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model.Articles) {
-        <tr>
-            <td>
-                <a asp-action="Details" asp-route-slug="@item.Slug" class="fw-bold text-decoration-none">
-                    @item.Title
-                </a>
-                @if (item.IsLiveSynced)
-                {
-                    <span class="badge bg-danger ms-1">Live</span>
-                }
-            </td>
-            <td>
-                <span class="badge bg-info text-dark">@(string.IsNullOrEmpty(item.Region) ? "Worldwide" : item.Region)</span>
-                @if (!string.IsNullOrEmpty(item.LocationScope) && item.LocationScope != "Global")
-                {
-                    <span class="badge bg-light text-muted border">@item.LocationScope</span>
-                }
-            </td>
-            <td>
-                <span class="badge bg-secondary">@item.Category?.Name</span>
-            </td>
-            <td>
-                @(item.Author?.DisplayName ?? item.SourceName ?? "Staff")
-            </td>
-            <td>
-                @(item.PublishedDate?.ToString("yyyy-MM-dd") ?? "Draft")
-            </td>
-            <td>
-                @item.ViewCount
-            </td>
-            <td>
-                @item.LikeCount
-            </td>
-            <td class="text-end text-nowrap">
-                <a asp-action="Details" asp-route-slug="@item.Slug" class="btn btn-sm btn-outline-primary">Details</a>
-                @if (User.Identity?.IsAuthenticated == true)
-                {
-                    <form asp-action="ToggleBookmark" asp-route-id="@item.Id" method="post" class="d-inline ms-1">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
-                        <button type="submit" class="btn btn-sm btn-outline-secondary" title="Save to bookmarks">
-                            Bookmark
-                        </button>
-                    </form>
-                }
-                else
-                {
-                    <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path@Context.Request.QueryString" class="btn btn-sm btn-outline-secondary" title="Login to bookmark">
-                        Bookmark
-                    </a>
-                }
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
-
-@if (Model.TotalPages > 1)
+@if (!string.IsNullOrEmpty(errorMessage))
 {
-    <nav aria-label="Page navigation">
-        <ul class="pagination justify-content-center">
-            <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
-                <a class="page-link" asp-action="Index"
-                   asp-route-page="@(Model.CurrentPage - 1)"
-                   asp-route-search="@Model.SearchTerm"
-                   asp-route-categoryId="@Model.CategoryId"
-                   asp-route-region="@Model.Region"
-                   asp-route-locationScope="@Model.LocationScope"
-                   asp-route-sourceType="@Model.SourceType"
-                   asp-route-sortBy="@Model.SortBy">&laquo; Previous</a>
-            </li>
-            @for (int i = 1; i <= Model.TotalPages; i++)
-            {
-                <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                    <a class="page-link" asp-action="Index"
-                       asp-route-page="@i"
-                       asp-route-search="@Model.SearchTerm"
-                       asp-route-categoryId="@Model.CategoryId"
-                       asp-route-region="@Model.Region"
-                       asp-route-locationScope="@Model.LocationScope"
-                       asp-route-sourceType="@Model.SourceType"
-                       asp-route-sortBy="@Model.SortBy">@i</a>
-                </li>
-            }
-            <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
-                <a class="page-link" asp-action="Index"
-                   asp-route-page="@(Model.CurrentPage + 1)"
-                   asp-route-search="@Model.SearchTerm"
-                   asp-route-categoryId="@Model.CategoryId"
-                   asp-route-region="@Model.Region"
-                   asp-route-locationScope="@Model.LocationScope"
-                   asp-route-sourceType="@Model.SourceType"
-                   asp-route-sortBy="@Model.SortBy">Next &raquo;</a>
-            </li>
-        </ul>
-    </nav>
+    <div class="alert alert-warning" role="alert">
+        @errorMessage
+    </div>
+}
+else if (Model == null || !Model.Any())
+{
+    <div class="alert alert-info" role="alert">
+        No news articles found.
+    </div>
+}
+else
+{
+    <p class="text-muted">Showing @Model.Count articles</p>
+
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        @foreach (var item in Model)
+        {
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    @if (!string.IsNullOrWhiteSpace(item.Image))
+                    {
+                        <img src="@item.Image" class="card-img-top" alt="@item.Title" style="height: 200px; object-fit: cover;" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800';" />
+                    }
+                    else
+                    {
+                        <img src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800" class="card-img-top" alt="Placeholder news image" style="height: 200px; object-fit: cover;" />
+                    }
+                    <div class="card-body d-flex flex-column">
+                        <div class="mb-2">
+                            @if (!string.IsNullOrWhiteSpace(item.Category))
+                            {
+                                <span class="badge bg-secondary">@item.Category</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(item.Language))
+                            {
+                                <span class="badge bg-light text-dark border">@item.Language.ToUpper()</span>
+                            }
+                        </div>
+                        <h5 class="card-title">@item.Title</h5>
+                        <p class="card-text text-muted flex-grow-1">
+                            @(string.IsNullOrWhiteSpace(item.Description) ? "No description provided." : item.Description)
+                        </p>
+                        <div class="text-muted small mb-3">
+                            <div><strong>Author:</strong> @(string.IsNullOrWhiteSpace(item.Author) ? "Staff" : item.Author)</div>
+                            <div><strong>Published:</strong> @(item.Published.HasValue ? item.Published.Value.ToString("yyyy-MM-dd HH:mm") : "Recently")</div>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(item.Url))
+                        {
+                            <a href="@item.Url" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-sm mt-auto">
+                                Read Article &rarr;
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
 }

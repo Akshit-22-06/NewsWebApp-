@@ -12,83 +12,91 @@ using NewsWebApp.ViewModels;
 namespace NewsWebApp.Controllers
 {
     /// <summary>
-    /// Simple and clean controller for browsing, searching, reading news, bookmarks, likes, comments, and city-area live news.
+    /// Simple and clean controller for browsing, searching Currents API news, reading articles, bookmarks, likes, and comments.
     /// </summary>
     public class NewsController : Controller
     {
+        private readonly INewsService _newsService;
         private readonly INewsRepository _newsRepo;
         private readonly ICategoryRepository _categoryRepo;
         private readonly ICommentRepository _commentRepo;
         private readonly IBookmarkRepository _bookmarkRepo;
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly ILiveNewsService _liveNewsService;
+        private readonly ILogger<NewsController> _logger;
 
         public NewsController(
+            INewsService newsService,
             INewsRepository newsRepo,
             ICategoryRepository categoryRepo,
             ICommentRepository commentRepo,
             IBookmarkRepository bookmarkRepo,
             UserManager<ApplicationUser> userManager,
-            ILiveNewsService liveNewsService)
+            ILogger<NewsController> logger)
         {
+            _newsService = newsService;
             _newsRepo = newsRepo;
             _categoryRepo = categoryRepo;
             _commentRepo = commentRepo;
             _bookmarkRepo = bookmarkRepo;
             _userManager = userManager;
-            _liveNewsService = liveNewsService;
+            _logger = logger;
         }
 
         // GET: /news
         public async Task<IActionResult> Index(
             string? search, 
-            int? categoryId, 
-            string? sortBy, 
-            string? sourceType, 
-            string? region, 
-            string? locationScope, 
-            int page = 1)
+            string? category, 
+            string? country, 
+            string? language)
         {
-            const int pageSize = 9;
-            var (articles, totalCount) = await _newsRepo.GetPagedPublishedAsync(
-                search, categoryId, sortBy, page, pageSize, sourceType, null, region, locationScope);
+            ViewBag.SearchTerm = search;
+            ViewBag.SelectedCategory = category;
+            ViewBag.SelectedCountry = country;
+            ViewBag.SelectedLanguage = language;
 
-            string? categoryName = null;
-            if (categoryId.HasValue)
+            try
             {
-                var cat = await _categoryRepo.GetByIdAsync(categoryId.Value);
-                categoryName = cat?.Name;
+                List<NewsDto> news;
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    news = await _newsService.SearchNewsAsync(search.Trim(), category, country, language);
+                }
+                else if (!string.IsNullOrWhiteSpace(category))
+                {
+                    news = await _newsService.GetNewsByCategoryAsync(category.Trim());
+                }
+                else
+                {
+                    news = await _newsService.GetLatestNewsAsync(category, country, language);
+                }
+
+                return View("Index", news);
             }
-
-            var availableRegions = await _newsRepo.GetAvailableRegionsAsync();
-
-            var model = new NewsListViewModel
+            catch (Exception ex)
             {
-                Articles = articles,
-                CurrentPage = page,
-                PageSize = pageSize,
-                TotalArticles = totalCount,
-                SearchTerm = search,
-                CategoryId = categoryId,
-                CategoryName = categoryName,
-                SortBy = sortBy,
-                SourceType = sourceType,
-                Region = region,
-                LocationScope = locationScope,
-                AvailableRegions = availableRegions,
-                Categories = await _categoryRepo.GetAllAsync()
-            };
+                _logger.LogError(ex, "Failed to load news from Currents API.");
+                ViewBag.ErrorMessage = "Unable to load news right now. Please try again later.";
+                return View("Index", new List<NewsDto>());
+            }
+        }
 
-            return View(model);
+        // GET: /news/search or /search?q=technology
+        public async Task<IActionResult> Search(
+            string? query, 
+            string? q, 
+            string? category, 
+            string? country, 
+            string? language)
+        {
+            var searchTerm = !string.IsNullOrWhiteSpace(query) ? query : q;
+            return await Index(searchTerm, category, country, language);
         }
 
         // GET: /news/category/{slug}
-        public async Task<IActionResult> Category(string slug, string? sortBy, int page = 1)
+        public async Task<IActionResult> Category(string slug)
         {
-            var category = await _categoryRepo.GetBySlugAsync(slug);
-            if (category == null) return NotFound();
-
-            return await Index(null, category.Id, sortBy, null, null, null, page);
+            if (string.IsNullOrWhiteSpace(slug)) return RedirectToAction(nameof(Index));
+            return await Index(null, slug, null, null);
         }
 
         // GET: /news/details/{slug}
@@ -99,10 +107,18 @@ namespace NewsWebApp.Controllers
             var article = await _newsRepo.GetBySlugAsync(slug);
             if (article == null || !article.IsPublished) return NotFound();
 
+            var userId = _userManager.GetUserId(User);
+            bool isAuthorizedViewer = User.IsInRole("Admin") || 
+                (article.Author != null && !string.IsNullOrEmpty(userId) && article.Author.UserId == userId);
+
+            if (article.Status != ArticleStatus.Approved && !isAuthorizedViewer)
+            {
+                return NotFound();
+            }
+
             await _newsRepo.IncrementViewCountAsync(article.Id);
 
             var related = await _newsRepo.GetRelatedAsync(article.Id, article.CategoryId, 3);
-            var userId = _userManager.GetUserId(User);
             bool isBookmarked = !string.IsNullOrEmpty(userId) && await _bookmarkRepo.IsBookmarkedAsync(userId, article.Id);
 
             int wordCount = (article.Content ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
@@ -200,58 +216,6 @@ namespace NewsWebApp.Controllers
                 }
             }
             return RedirectToAction(nameof(Details), new { slug });
-        }
-
-        // GET: /news/city?city=Pune
-        public async Task<IActionResult> City(string? city)
-        {
-            var model = new CityNewsViewModel
-            {
-                City = city?.Trim()
-            };
-
-            if (!string.IsNullOrWhiteSpace(city))
-            {
-                string cleanCity = city.Trim();
-                if (cleanCity.Length > 1)
-                {
-                    cleanCity = char.ToUpper(cleanCity[0]) + cleanCity[1..].ToLower();
-                }
-                model.City = cleanCity;
-
-                // 1. Check existing articles in database
-                var existing = (await _newsRepo.GetCityArticlesAsync(cleanCity, 30)).ToList();
-
-                // 2. If fewer than 3 articles or no articles from the past 48 hours, fetch live breaking news on-demand
-                bool hasRecent = existing.Any(a => a.PublishedDate.HasValue && a.PublishedDate.Value > DateTime.UtcNow.AddDays(-2));
-                if (existing.Count < 3 || !hasRecent)
-                {
-                    var syncResult = await _liveNewsService.FetchAndSyncCityNewsAsync(cleanCity);
-                    if (syncResult.NewArticlesAdded > 0)
-                    {
-                        model.IsLiveFetched = true;
-                        existing = (await _newsRepo.GetCityArticlesAsync(cleanCity, 30)).ToList();
-                    }
-                }
-
-                model.Articles = existing;
-                model.TotalFound = existing.Count;
-            }
-
-            return View(model);
-        }
-
-        // POST: /news/refreshcity
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RefreshCity(string city)
-        {
-            if (!string.IsNullOrWhiteSpace(city))
-            {
-                var result = await _liveNewsService.FetchAndSyncCityNewsAsync(city);
-                TempData["SuccessMessage"] = $"Fetched {result.NewArticlesAdded} live news headlines for {city}!";
-            }
-            return RedirectToAction(nameof(City), new { city });
         }
     }
 }

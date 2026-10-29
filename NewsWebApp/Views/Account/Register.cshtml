@@ -36,6 +36,13 @@
                 <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
             </div>
 
+            <div class="form-check mb-3">
+                <input asp-for="WantToBeAuthor" class="form-check-input" type="checkbox" id="wantToBeAuthorCheck" />
+                <label class="form-check-label" for="wantToBeAuthorCheck">
+                    I want to publish articles on NewsBase and become an Author
+                </label>
+            </div>
+
             <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
 
             <div class="mt-3">

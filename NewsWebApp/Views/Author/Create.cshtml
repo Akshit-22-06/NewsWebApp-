@@ -1,0 +1,84 @@
+@model NewsWebApp.ViewModels.CreateAuthorArticleViewModel
+@{
+    ViewData["Title"] = "Submit New Article for Review";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+            <div>
+                <h1 class="h2 mb-1">Submit Article</h1>
+                <p class="text-muted mb-0">Write and submit your article for administrator review and approval.</p>
+            </div>
+            <div>
+                <a asp-controller="Author" asp-action="Dashboard" class="btn btn-outline-secondary">
+                    Back to Studio
+                </a>
+            </div>
+        </div>
+
+        <div class="alert alert-info py-2 px-3 mb-4" role="alert">
+            <strong>Review Workflow Note:</strong> Your article will be submitted with <strong>Pending</strong> status. An administrator will review your submission before it is approved and published on the live site.
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form asp-controller="Author" asp-action="Create" method="post">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <!-- Title -->
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label fw-semibold">Article Title <span class="text-danger">*</span></label>
+                        <input asp-for="Title" class="form-control form-control-lg" placeholder="Enter a descriptive headline..." />
+                        <span asp-validation-for="Title" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Category -->
+                    <div class="mb-3">
+                        <label asp-for="CategoryId" class="form-label fw-semibold">Category <span class="text-danger">*</span></label>
+                        <select asp-for="CategoryId" asp-items="Model.Categories" class="form-select">
+                            <option value="">-- Choose Category --</option>
+                        </select>
+                        <span asp-validation-for="CategoryId" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Image URL -->
+                    <div class="mb-3">
+                        <label asp-for="ImageUrl" class="form-label fw-semibold">Featured Image URL (Optional)</label>
+                        <input asp-for="ImageUrl" class="form-control" placeholder="https://example.com/image.jpg" />
+                        <span asp-validation-for="ImageUrl" class="text-danger small"></span>
+                        <div class="form-text">Direct link to an image for this article.</div>
+                    </div>
+
+                    <!-- Summary -->
+                    <div class="mb-3">
+                        <label asp-for="Summary" class="form-label fw-semibold">Summary / Subheading <span class="text-danger">*</span></label>
+                        <textarea asp-for="Summary" class="form-control" rows="3" placeholder="Brief summary of the article (max 500 characters)..."></textarea>
+                        <span asp-validation-for="Summary" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="mb-4">
+                        <label asp-for="Content" class="form-label fw-semibold">Article Body <span class="text-danger">*</span></label>
+                        <textarea asp-for="Content" class="form-control" rows="12" placeholder="Write your full article content here..."></textarea>
+                        <span asp-validation-for="Content" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                        <a asp-controller="Author" asp-action="Dashboard" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            Submit for Review
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -32,14 +32,14 @@ namespace NewsWebApp.Repositories.Implementations
         public async Task<Category?> GetByIdAsync(int id)
         {
             return await _context.Categories
-                .Include(c => c.NewsArticles.Where(a => a.IsPublished))
+                .Include(c => c.NewsArticles.Where(a => a.IsPublished && a.Status == ArticleStatus.Approved))
                 .FirstOrDefaultAsync(c => c.Id == id);
         }
 
         public async Task<Category?> GetBySlugAsync(string slug)
         {
             return await _context.Categories
-                .Include(c => c.NewsArticles.Where(a => a.IsPublished).OrderByDescending(a => a.PublishedDate))
+                .Include(c => c.NewsArticles.Where(a => a.IsPublished && a.Status == ArticleStatus.Approved).OrderByDescending(a => a.PublishedDate))
                 .FirstOrDefaultAsync(c => c.Slug.ToLower() == slug.ToLower());
         }
 
@@ -87,7 +87,7 @@ namespace NewsWebApp.Repositories.Implementations
                 .Select(c => new
                 {
                     Category = c,
-                    ArticleCount = c.NewsArticles.Count(a => a.IsPublished)
+                    ArticleCount = c.NewsArticles.Count(a => a.IsPublished && a.Status == ArticleStatus.Approved)
                 })
                 .OrderBy(x => x.Category.Name)
                 .ToListAsync();

@@ -21,7 +21,6 @@ namespace NewsWebApp.Data
         public DbSet<Comment> Comments { get; set; } = null!;
         public DbSet<ArticleBookmark> ArticleBookmarks { get; set; } = null!;
         public DbSet<NewsletterSubscriber> NewsletterSubscribers { get; set; } = null!;
-        public DbSet<NewsFeedSource> NewsFeedSources { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -81,15 +80,17 @@ namespace NewsWebApp.Data
                 entity.Property(a => a.Summary).IsRequired().HasMaxLength(500);
                 entity.Property(a => a.Content).IsRequired();
                 entity.Property(a => a.ImageUrl).HasMaxLength(500);
+                entity.Property(a => a.Status).IsRequired().HasMaxLength(20).HasDefaultValue("Pending");
+                entity.Property(a => a.RejectionReason).HasMaxLength(500);
 
                 // Unique index on Slug
                 entity.HasIndex(a => a.Slug).IsUnique();
 
-                // Composite index for querying published & featured articles quickly
+                // Composite index for querying published, approved & featured articles quickly
+                entity.HasIndex(a => a.Status);
+                entity.HasIndex(a => new { a.IsPublished, a.Status, a.PublishedDate });
                 entity.HasIndex(a => new { a.IsPublished, a.PublishedDate });
                 entity.HasIndex(a => new { a.IsPublished, a.IsFeatured });
-                entity.HasIndex(a => a.Region);
-                entity.HasIndex(a => a.LocationScope);
 
                 // Relationship: 1 NewsArticle -> Many Comments (Cascade delete)
                 entity.HasMany(a => a.Comments)
@@ -141,18 +142,6 @@ namespace NewsWebApp.Data
                 entity.HasKey(s => s.Id);
                 entity.Property(s => s.Email).IsRequired().HasMaxLength(256);
                 entity.HasIndex(s => s.Email).IsUnique();
-            });
-
-            // ==========================================
-            // NewsFeedSource Configuration
-            // ==========================================
-            builder.Entity<NewsFeedSource>(entity =>
-            {
-                entity.HasKey(s => s.Id);
-                entity.Property(s => s.Name).IsRequired().HasMaxLength(100);
-                entity.Property(s => s.FeedUrl).IsRequired().HasMaxLength(500);
-                entity.Property(s => s.CategorySlug).IsRequired().HasMaxLength(100);
-                entity.HasIndex(s => s.FeedUrl).IsUnique();
             });
         }
     }

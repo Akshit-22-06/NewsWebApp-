@@ -1,6 +1,9 @@
 ## .NET Core / ASP.NET Core
 bin/
 obj/
+publish/
+[Pp]ublish/
+.vs/
 *.user
 *.userosscache
 *.sln.docstates
@@ -26,7 +29,12 @@ bld/
 *.sqlite
 *.sqlite3
 
-## macOS
+## User secrets & local environment files
+.env
+.env.*
+secrets.json
+
+## macOS & OS files
 .DS_Store
 .AppleDouble
 .LSOverride
@@ -37,7 +45,3 @@ bld/
 *.swp
 *~
 .archify-preview*
-
-## Node & Frontend builds (if any)
-node_modules/
-dist/

@@ -35,7 +35,7 @@ namespace NewsWebApp.Repositories.Implementations
         {
             return await _context.Authors
                 .Include(a => a.User)
-                .Include(a => a.NewsArticles.Where(n => n.IsPublished).OrderByDescending(n => n.PublishedDate))
+                .Include(a => a.NewsArticles.Where(n => n.IsPublished && n.Status == ArticleStatus.Approved).OrderByDescending(n => n.PublishedDate))
                     .ThenInclude(n => n.Category)
                 .FirstOrDefaultAsync(a => a.Id == id);
         }

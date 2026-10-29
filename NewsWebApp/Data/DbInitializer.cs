@@ -182,17 +182,6 @@ namespace NewsWebApp.Data
                 context.NewsArticles.AddRange(sampleArticles);
                 await context.SaveChangesAsync();
             }
-
-            // 8. Seed Default Feed Sources if empty
-            if (!await context.NewsFeedSources.AnyAsync())
-            {
-                context.NewsFeedSources.AddRange(
-                    new NewsFeedSource { Name = "BBC World", CategorySlug = "world", FeedUrl = "https://feeds.bbci.co.uk/news/world/rss.xml", IsActive = true, CreatedAt = DateTime.UtcNow },
-                    new NewsFeedSource { Name = "TechCrunch", CategorySlug = "technology", FeedUrl = "https://techcrunch.com/feed/", IsActive = true, CreatedAt = DateTime.UtcNow },
-                    new NewsFeedSource { Name = "BBC Business", CategorySlug = "business", FeedUrl = "https://feeds.bbci.co.uk/news/business/rss.xml", IsActive = true, CreatedAt = DateTime.UtcNow }
-                );
-                await context.SaveChangesAsync();
-            }
         }
     }
 }

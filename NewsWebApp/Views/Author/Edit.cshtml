@@ -1,0 +1,102 @@
+@model NewsWebApp.ViewModels.EditAuthorArticleViewModel
+@{
+    ViewData["Title"] = "Edit Article - Author Studio";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+            <div>
+                <h1 class="h2 mb-1">Edit Article</h1>
+                <p class="text-muted mb-0">Revise your article content and resubmit for administrator approval.</p>
+            </div>
+            <div>
+                <a asp-controller="Author" asp-action="Dashboard" class="btn btn-outline-secondary">
+                    Back to Studio
+                </a>
+            </div>
+        </div>
+
+        @if (Model.Status == NewsWebApp.Models.ArticleStatus.Rejected && !string.IsNullOrWhiteSpace(Model.RejectionReason))
+        {
+            <div class="alert alert-danger mb-4 shadow-sm" role="alert">
+                <h5 class="alert-heading fw-bold mb-1">Article Rejected by Administrator</h5>
+                <p class="mb-2"><strong>Reason:</strong> @Model.RejectionReason</p>
+                <hr />
+                <small class="mb-0">Please update the article to resolve the administrator's feedback, then click "Resubmit for Review" below.</small>
+            </div>
+        }
+        else if (Model.Status == NewsWebApp.Models.ArticleStatus.Pending)
+        {
+            <div class="alert alert-warning mb-4 shadow-sm" role="alert">
+                <strong>Status: Pending Review.</strong> You can make edits while it is waiting for review.
+            </div>
+        }
+        else if (Model.Status == NewsWebApp.Models.ArticleStatus.Approved)
+        {
+            <div class="alert alert-info mb-4 shadow-sm" role="alert">
+                <strong>Status: Approved.</strong> Notice: Saving changes to this approved article will resubmit it as <strong>Pending</strong> for administrator re-approval before updates go live.
+            </div>
+        }
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form asp-controller="Author" asp-action="Edit" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Id" />
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <!-- Title -->
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label fw-semibold">Article Title <span class="text-danger">*</span></label>
+                        <input asp-for="Title" class="form-control form-control-lg" />
+                        <span asp-validation-for="Title" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Category -->
+                    <div class="mb-3">
+                        <label asp-for="CategoryId" class="form-label fw-semibold">Category <span class="text-danger">*</span></label>
+                        <select asp-for="CategoryId" asp-items="Model.Categories" class="form-select">
+                            <option value="">-- Choose Category --</option>
+                        </select>
+                        <span asp-validation-for="CategoryId" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Image URL -->
+                    <div class="mb-3">
+                        <label asp-for="ImageUrl" class="form-label fw-semibold">Featured Image URL (Optional)</label>
+                        <input asp-for="ImageUrl" class="form-control" />
+                        <span asp-validation-for="ImageUrl" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Summary -->
+                    <div class="mb-3">
+                        <label asp-for="Summary" class="form-label fw-semibold">Summary / Subheading <span class="text-danger">*</span></label>
+                        <textarea asp-for="Summary" class="form-control" rows="3"></textarea>
+                        <span asp-validation-for="Summary" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="mb-4">
+                        <label asp-for="Content" class="form-label fw-semibold">Article Body <span class="text-danger">*</span></label>
+                        <textarea asp-for="Content" class="form-control" rows="12"></textarea>
+                        <span asp-validation-for="Content" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                        <a asp-controller="Author" asp-action="Dashboard" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            @(Model.Status == NewsWebApp.Models.ArticleStatus.Rejected ? "Resubmit for Review" : "Save Changes")
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

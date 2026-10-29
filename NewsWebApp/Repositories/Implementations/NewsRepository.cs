@@ -52,7 +52,7 @@ namespace NewsWebApp.Repositories.Implementations
         public async Task<IEnumerable<NewsArticle>> GetLatestAsync(int count)
         {
             return await _context.NewsArticles
-                .Where(a => a.IsPublished)
+                .Where(a => a.IsPublished && a.Status == ArticleStatus.Approved)
                 .Include(a => a.Category)
                 .Include(a => a.Author)
                 .OrderByDescending(a => a.PublishedDate)
@@ -63,7 +63,7 @@ namespace NewsWebApp.Repositories.Implementations
         public async Task<IEnumerable<NewsArticle>> GetFeaturedAsync(int count)
         {
             return await _context.NewsArticles
-                .Where(a => a.IsPublished && a.IsFeatured)
+                .Where(a => a.IsPublished && a.IsFeatured && a.Status == ArticleStatus.Approved)
                 .Include(a => a.Category)
                 .Include(a => a.Author)
                 .OrderByDescending(a => a.PublishedDate)
@@ -74,7 +74,7 @@ namespace NewsWebApp.Repositories.Implementations
         public async Task<IEnumerable<NewsArticle>> GetPopularAsync(int count)
         {
             return await _context.NewsArticles
-                .Where(a => a.IsPublished)
+                .Where(a => a.IsPublished && a.Status == ArticleStatus.Approved)
                 .Include(a => a.Category)
                 .Include(a => a.Author)
                 .OrderByDescending(a => a.ViewCount)
@@ -82,115 +82,18 @@ namespace NewsWebApp.Repositories.Implementations
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<NewsArticle>> GetMostDiscussedAsync(int count)
-        {
-            return await _context.NewsArticles
-                .Where(a => a.IsPublished)
-                .Include(a => a.Category)
-                .Include(a => a.Author)
-                .OrderByDescending(a => a.Comments.Count)
-                .Take(count)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<NewsArticle>> GetLiveBreakingNewsAsync(int count)
-        {
-            return await _context.NewsArticles
-                .Where(a => a.IsPublished && a.IsLiveSynced)
-                .Include(a => a.Category)
-                .OrderByDescending(a => a.PublishedDate)
-                .Take(count)
-                .ToListAsync();
-        }
-
         public async Task<IEnumerable<NewsArticle>> GetRelatedAsync(int articleId, int categoryId, int count)
         {
             return await _context.NewsArticles
-                .Where(a => a.IsPublished && a.CategoryId == categoryId && a.Id != articleId)
+                .Where(a => a.IsPublished && a.Status == ArticleStatus.Approved && a.CategoryId == categoryId && a.Id != articleId)
                 .Include(a => a.Category)
-                .OrderByDescending(a => a.PublishedDate)
-                .Take(count)
-                .ToListAsync();
-        }
-
-        public async Task<(IEnumerable<NewsArticle> Articles, int TotalCount)> GetPagedPublishedAsync(
-            string? search, int? categoryId, string? sortBy, int page, int pageSize, string? sourceType = null, string? timeRange = null, string? region = null, string? locationScope = null)
-        {
-            var query = _context.NewsArticles
-                .Where(a => a.IsPublished)
-                .Include(a => a.Category)
-                .Include(a => a.Author)
-                .AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                var term = search.ToLower().Trim();
-                query = query.Where(a => a.Title.ToLower().Contains(term) || a.Summary.ToLower().Contains(term));
-            }
-
-            if (categoryId.HasValue)
-            {
-                query = query.Where(a => a.CategoryId == categoryId.Value);
-            }
-
-            if (!string.IsNullOrWhiteSpace(region) && !region.Equals("All", StringComparison.OrdinalIgnoreCase))
-            {
-                query = query.Where(a => a.Region.ToLower() == region.ToLower());
-            }
-
-            if (!string.IsNullOrWhiteSpace(locationScope) && !locationScope.Equals("All", StringComparison.OrdinalIgnoreCase))
-            {
-                query = query.Where(a => a.LocationScope.ToLower() == locationScope.ToLower());
-            }
-
-            if (sourceType == "live") query = query.Where(a => a.IsLiveSynced);
-            if (sourceType == "editorial") query = query.Where(a => !a.IsLiveSynced);
-
-            query = sortBy switch
-            {
-                "popular" => query.OrderByDescending(a => a.ViewCount),
-                "discussed" => query.OrderByDescending(a => a.Comments.Count),
-                "oldest" => query.OrderBy(a => a.PublishedDate),
-                _ => query.OrderByDescending(a => a.PublishedDate)
-            };
-
-            int totalCount = await query.CountAsync();
-            var articles = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-
-            return (articles, totalCount);
-        }
-
-        public async Task<IEnumerable<string>> GetAvailableRegionsAsync()
-        {
-            var dbRegions = await _context.NewsArticles
-                .Where(a => a.IsPublished && !string.IsNullOrEmpty(a.Region))
-                .Select(a => a.Region)
-                .Distinct()
-                .ToListAsync();
-
-            var predefined = new List<string> { "Worldwide", "India", "Delhi", "Mumbai", "Bengaluru", "Chennai", "Hyderabad", "Kolkata" };
-            return predefined.Union(dbRegions).Distinct().ToList();
-        }
-
-        public async Task<IEnumerable<NewsArticle>> GetCityArticlesAsync(string city, int count = 30)
-        {
-            if (string.IsNullOrWhiteSpace(city)) return Enumerable.Empty<NewsArticle>();
-
-            string term = city.Trim().ToLower();
-            return await _context.NewsArticles
-                .Where(a => a.IsPublished && (
-                    a.Region.ToLower() == term || 
-                    a.Title.ToLower().Contains(term) || 
-                    a.Summary.ToLower().Contains(term)))
-                .Include(a => a.Category)
-                .Include(a => a.Author)
                 .OrderByDescending(a => a.PublishedDate)
                 .Take(count)
                 .ToListAsync();
         }
 
         public async Task<(IEnumerable<NewsArticle> Articles, int TotalCount)> GetPagedAdminAsync(
-            string? search, int? categoryId, bool? isPublished, int page, int pageSize, string? authorUserId = null)
+            string? search, int? categoryId, bool? isPublished, int page, int pageSize, string? authorUserId = null, string? status = null)
         {
             var query = _context.NewsArticles
                 .Include(a => a.Category)
@@ -205,6 +108,7 @@ namespace NewsWebApp.Repositories.Implementations
 
             if (categoryId.HasValue) query = query.Where(a => a.CategoryId == categoryId.Value);
             if (isPublished.HasValue) query = query.Where(a => a.IsPublished == isPublished.Value);
+            if (!string.IsNullOrWhiteSpace(status)) query = query.Where(a => a.Status == status);
             if (!string.IsNullOrEmpty(authorUserId)) query = query.Where(a => a.Author != null && a.Author.UserId == authorUserId);
 
             query = query.OrderByDescending(a => a.CreatedAt);
@@ -213,6 +117,30 @@ namespace NewsWebApp.Repositories.Implementations
             var articles = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
             return (articles, totalCount);
+        }
+
+        public async Task<IEnumerable<NewsArticle>> GetPendingAsync()
+        {
+            return await _context.NewsArticles
+                .Where(a => a.Status == ArticleStatus.Pending)
+                .Include(a => a.Category)
+                .Include(a => a.Author).ThenInclude(au => au!.User)
+                .OrderByDescending(a => a.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<int> GetPendingCountAsync()
+        {
+            return await _context.NewsArticles.CountAsync(a => a.Status == ArticleStatus.Pending);
+        }
+
+        public async Task<IEnumerable<NewsArticle>> GetByAuthorUserIdAsync(string userId)
+        {
+            return await _context.NewsArticles
+                .Where(a => a.Author != null && a.Author.UserId == userId)
+                .Include(a => a.Category)
+                .OrderByDescending(a => a.CreatedAt)
+                .ToListAsync();
         }
 
         public async Task AddAsync(NewsArticle article)
@@ -264,21 +192,9 @@ namespace NewsWebApp.Repositories.Implementations
             return await query.AnyAsync();
         }
 
-        public async Task<bool> TitleExistsAsync(string title)
-        {
-            string clean = title.Trim().ToLower();
-            return await _context.NewsArticles.AnyAsync(a => a.Title.ToLower() == clean);
-        }
-
-        public async Task<bool> SourceUrlExistsAsync(string sourceUrl)
-        {
-            return await _context.NewsArticles.AnyAsync(a => a.SourceUrl == sourceUrl);
-        }
-
         public async Task<int> GetTotalCountAsync() => await _context.NewsArticles.CountAsync();
         public async Task<int> GetPublishedCountAsync() => await _context.NewsArticles.CountAsync(a => a.IsPublished);
         public async Task<int> GetDraftCountAsync() => await _context.NewsArticles.CountAsync(a => !a.IsPublished);
         public async Task<int> GetTotalViewsAsync() => await _context.NewsArticles.SumAsync(a => a.ViewCount);
-        public async Task<int> GetLiveSyncedCountAsync() => await _context.NewsArticles.CountAsync(a => a.IsLiveSynced);
     }
 }

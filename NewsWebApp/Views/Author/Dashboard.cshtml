@@ -1,0 +1,139 @@
+@model NewsWebApp.ViewModels.AuthorDashboardViewModel
+@{
+    ViewData["Title"] = "Author Studio - My Articles";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <div>
+        <h1 class="h2 mb-1">Author Studio</h1>
+        <p class="text-muted mb-0">Welcome, <strong>@Model.Author.DisplayName</strong>. Manage your stories and track admin review statuses.</p>
+    </div>
+    <div>
+        <a asp-controller="Author" asp-action="Create" class="btn btn-primary">
+            + Create New Article
+        </a>
+    </div>
+</div>
+
+<!-- Status Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-warning shadow-sm">
+            <div class="card-body">
+                <span class="text-muted small text-uppercase fw-semibold">Pending Review</span>
+                <div class="h3 text-warning mb-0 mt-1">@Model.PendingCount</div>
+                <small class="text-muted">Awaiting administrator approval</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-success shadow-sm">
+            <div class="card-body">
+                <span class="text-muted small text-uppercase fw-semibold">Approved &amp; Live</span>
+                <div class="h3 text-success mb-0 mt-1">@Model.ApprovedCount</div>
+                <small class="text-muted">Visible on public NewsBase</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-danger shadow-sm">
+            <div class="card-body">
+                <span class="text-muted small text-uppercase fw-semibold">Rejected</span>
+                <div class="h3 text-danger mb-0 mt-1">@Model.RejectedCount</div>
+                <small class="text-muted">Needs revisions before re-review</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Articles Table -->
+<div class="card shadow-sm">
+    <div class="card-header bg-white py-3">
+        <h5 class="mb-0 fw-bold">My Articles</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="min-width: 250px;">Title</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                    <th class="text-end" style="min-width: 160px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Articles.Any())
+                {
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <p class="mb-2">You haven't submitted any articles yet.</p>
+                            <a asp-controller="Author" asp-action="Create" class="btn btn-sm btn-outline-primary">
+                                Write your first article
+                            </a>
+                        </td>
+                    </tr>
+                }
+                @foreach (var article in Model.Articles)
+                {
+                    <tr>
+                        <td>
+                            <div class="fw-bold">
+                                @if (article.Status == NewsWebApp.Models.ArticleStatus.Approved)
+                                {
+                                    <a asp-controller="News" asp-action="Details" asp-route-slug="@article.Slug" target="_blank" class="text-decoration-none">
+                                        @article.Title
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span>@article.Title</span>
+                                }
+                            </div>
+                            <div class="text-muted small">
+                                Slug: <code>@article.Slug</code>
+                            </div>
+
+                            @if (article.Status == NewsWebApp.Models.ArticleStatus.Rejected && !string.IsNullOrWhiteSpace(article.RejectionReason))
+                            {
+                                <div class="alert alert-danger py-1 px-2 my-1 small" role="alert">
+                                    <strong>Rejection Reason:</strong> @article.RejectionReason
+                                </div>
+                            }
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">@(article.Category?.Name ?? "General")</span>
+                        </td>
+                        <td>
+                            @if (article.Status == NewsWebApp.Models.ArticleStatus.Approved)
+                            {
+                                <span class="badge bg-success">Approved</span>
+                            }
+                            else if (article.Status == NewsWebApp.Models.ArticleStatus.Rejected)
+                            {
+                                <span class="badge bg-danger">Rejected</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">Pending</span>
+                            }
+                        </td>
+                        <td class="text-muted small">
+                            @article.CreatedAt.ToString("MMM dd, yyyy")
+                        </td>
+                        <td class="text-end text-nowrap">
+                            <a asp-controller="Author" asp-action="Edit" asp-route-id="@article.Id" class="btn btn-sm btn-outline-primary">
+                                @(article.Status == NewsWebApp.Models.ArticleStatus.Rejected ? "Edit & Resubmit" : "Edit")
+                            </a>
+
+                            <form asp-controller="Author" asp-action="Delete" asp-route-id="@article.Id" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this article?');">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -17,7 +17,7 @@ var builder = WebApplication.CreateBuilder(args);
 // ==========================================
 // 1. Database & EF Core Configuration
 // ==========================================
-var provider = builder.Configuration.GetValue<string>("DatabaseProvider") ?? "SqlServer";
+var provider = builder.Configuration.GetValue<string>("DatabaseProvider") ?? "Sqlite";
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
@@ -90,19 +90,15 @@ builder.Services.AddScoped<ICommentRepository, CommentRepository>();
 builder.Services.AddScoped<IAuthorRepository, AuthorRepository>();
 builder.Services.AddScoped<IBookmarkRepository, BookmarkRepository>();
 builder.Services.AddScoped<INewsletterRepository, NewsletterRepository>();
-builder.Services.AddScoped<INewsFeedSourceRepository, NewsFeedSourceRepository>();
 
-// Live News Ingestion Engine & Background Poller
-builder.Services.AddHttpClient("LiveNewsClient", client =>
+// Currents News API Service Registration (Single External News Source)
+builder.Services.AddHttpClient<INewsService, NewsService>(client =>
 {
-    client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
+    var baseUrl = builder.Configuration["CurrentsApi:BaseUrl"] ?? "https://api.currentsapi.services/";
+    client.BaseAddress = new Uri(baseUrl);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("NewsWebApp/1.0");
     client.Timeout = TimeSpan.FromSeconds(15);
-}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-{
-    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
 });
-builder.Services.AddScoped<ILiveNewsService, LiveNewsService>();
-builder.Services.AddHostedService<LiveNewsSyncBackgroundService>();
 
 // ==========================================
 // 4. MVC & Routing Configuration
@@ -173,6 +169,11 @@ app.MapControllerRoute(
     name: "newsDetails",
     pattern: "news/details/{slug}",
     defaults: new { controller = "News", action = "Details" });
+
+app.MapControllerRoute(
+    name: "newsSearch",
+    pattern: "search",
+    defaults: new { controller = "News", action = "Search" });
 
 // Standard default route
 app.MapControllerRoute(

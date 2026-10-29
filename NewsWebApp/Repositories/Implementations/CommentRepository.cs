@@ -21,16 +21,6 @@ namespace NewsWebApp.Repositories.Implementations
             _context = context;
         }
 
-        public async Task<IEnumerable<Comment>> GetByArticleIdAsync(int articleId)
-        {
-            return await _context.Comments
-                .AsNoTracking()
-                .Where(c => c.NewsArticleId == articleId)
-                .Include(c => c.User)
-                .OrderByDescending(c => c.CreatedAt)
-                .ToListAsync();
-        }
-
         public async Task<Comment?> GetByIdAsync(int id)
         {
             return await _context.Comments

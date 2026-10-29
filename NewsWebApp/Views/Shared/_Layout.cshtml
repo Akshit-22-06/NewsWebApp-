@@ -25,21 +25,21 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="News" asp-action="Index">News</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark fw-bold text-primary" asp-area="" asp-controller="News" asp-action="City">📍 City News</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Category" asp-action="Index">Categories</a>
-                        </li>
-                        <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Author" asp-action="Index">Authors</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="News" asp-action="Bookmarks">Bookmarks</a>
                         </li>
-                        @if (User.IsInRole("Admin") || User.IsInRole("Author"))
+                        @if (User.IsInRole("Admin"))
                         {
                             <li class="nav-item">
                                 <a class="nav-link text-primary" asp-area="" asp-controller="Admin" asp-action="Index">Admin Panel</a>
+                            </li>
+                        }
+                        @if (User.IsInRole("Author"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-primary" asp-area="" asp-controller="Author" asp-action="Dashboard">Author Studio</a>
                             </li>
                         }
                         <li class="nav-item">

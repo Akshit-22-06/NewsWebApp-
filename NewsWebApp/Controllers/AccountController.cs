@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using NewsWebApp.Models;
+using NewsWebApp.Repositories.Interfaces;
 using NewsWebApp.ViewModels;
 
 namespace NewsWebApp.Controllers
@@ -14,13 +15,16 @@ namespace NewsWebApp.Controllers
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly IAuthorRepository _authorRepository;
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager)
+            SignInManager<ApplicationUser> signInManager,
+            IAuthorRepository authorRepository)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _authorRepository = authorRepository;
         }
 
         // GET: /account/register
@@ -67,11 +71,27 @@ namespace NewsWebApp.Controllers
             var result = await _userManager.CreateAsync(user, model.Password);
             if (result.Succeeded)
             {
-                // Assign default role of Reader to new self-registered users
+                // 1. Assign default role of Reader to new registered users
                 await _userManager.AddToRoleAsync(user, "Reader");
 
+                // 2. If user chose to become an Author, securely assign Author role and create Author profile
+                if (model.WantToBeAuthor)
+                {
+                    await _userManager.AddToRoleAsync(user, "Author");
+
+                    var author = new Author
+                    {
+                        UserId = user.Id,
+                        DisplayName = user.FullName,
+                        Bio = "Contributor at NewsBase"
+                    };
+                    await _authorRepository.AddAsync(author);
+                }
+
                 await _signInManager.SignInAsync(user, isPersistent: false);
-                TempData["SuccessMessage"] = $"Welcome to NewsWebApp, {user.FullName}!";
+                TempData["SuccessMessage"] = model.WantToBeAuthor
+                    ? $"Welcome to NewsBase, {user.FullName}! Your Author account has been created."
+                    : $"Welcome to NewsBase, {user.FullName}!";
 
                 if (Url.IsLocalUrl(returnUrl))
                 {

@@ -5,7 +5,7 @@ using NewsWebApp.Models;
 namespace NewsWebApp.Repositories.Interfaces
 {
     /// <summary>
-    /// Simplified, beginner-friendly repository interface for news articles.
+    /// Simplified, beginner-friendly repository interface for news articles in the database.
     /// </summary>
     public interface INewsRepository
     {
@@ -15,18 +15,14 @@ namespace NewsWebApp.Repositories.Interfaces
         Task<IEnumerable<NewsArticle>> GetLatestAsync(int count);
         Task<IEnumerable<NewsArticle>> GetFeaturedAsync(int count);
         Task<IEnumerable<NewsArticle>> GetPopularAsync(int count);
-        Task<IEnumerable<NewsArticle>> GetMostDiscussedAsync(int count);
-        Task<IEnumerable<NewsArticle>> GetLiveBreakingNewsAsync(int count);
         Task<IEnumerable<NewsArticle>> GetRelatedAsync(int articleId, int categoryId, int count);
-        
-        Task<(IEnumerable<NewsArticle> Articles, int TotalCount)> GetPagedPublishedAsync(
-            string? search, int? categoryId, string? sortBy, int page, int pageSize, string? sourceType = null, string? timeRange = null, string? region = null, string? locationScope = null);
 
-        Task<IEnumerable<string>> GetAvailableRegionsAsync();
-        Task<IEnumerable<NewsArticle>> GetCityArticlesAsync(string city, int count = 30);
-        
         Task<(IEnumerable<NewsArticle> Articles, int TotalCount)> GetPagedAdminAsync(
-            string? search, int? categoryId, bool? isPublished, int page, int pageSize, string? authorUserId = null);
+            string? search, int? categoryId, bool? isPublished, int page, int pageSize, string? authorUserId = null, string? status = null);
+
+        Task<IEnumerable<NewsArticle>> GetPendingAsync();
+        Task<int> GetPendingCountAsync();
+        Task<IEnumerable<NewsArticle>> GetByAuthorUserIdAsync(string userId);
 
         Task AddAsync(NewsArticle article);
         Task UpdateAsync(NewsArticle article);
@@ -35,13 +31,10 @@ namespace NewsWebApp.Repositories.Interfaces
         Task IncrementViewCountAsync(int id);
         Task IncrementLikeCountAsync(int id);
         Task<bool> SlugExistsAsync(string slug, int? excludeId = null);
-        Task<bool> TitleExistsAsync(string title);
-        Task<bool> SourceUrlExistsAsync(string sourceUrl);
 
         Task<int> GetTotalCountAsync();
         Task<int> GetPublishedCountAsync();
         Task<int> GetDraftCountAsync();
         Task<int> GetTotalViewsAsync();
-        Task<int> GetLiveSyncedCountAsync();
     }
 }

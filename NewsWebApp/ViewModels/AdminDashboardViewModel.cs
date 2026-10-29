@@ -16,7 +16,6 @@ namespace NewsWebApp.ViewModels
         public int TotalUsers { get; set; }
         public int TotalViews { get; set; }
         public int TotalSubscribers { get; set; }
-        public int TotalLiveFeeds { get; set; }
 
         public IEnumerable<NewsArticle> RecentArticles { get; set; } = new List<NewsArticle>();
         public IEnumerable<Comment> RecentComments { get; set; } = new List<Comment>();
