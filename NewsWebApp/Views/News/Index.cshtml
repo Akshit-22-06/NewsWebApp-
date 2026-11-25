@@ -1,118 +1,201 @@
-@model List<NewsWebApp.Models.NewsDto>
+@model NewsWebApp.ViewModels.NewsIndexViewModel
 
 @{
-    ViewData["Title"] = "News Articles";
-    var searchTerm = ViewBag.SearchTerm as string;
-    var selectedCategory = ViewBag.SelectedCategory as string;
-    var selectedCountry = ViewBag.SelectedCountry as string;
-    var selectedLanguage = ViewBag.SelectedLanguage as string;
-    var errorMessage = ViewBag.ErrorMessage as string;
+    ViewData["Title"] = "News & Dispatches";
 }
 
-<div class="mb-3">
-    <h1 class="mb-0">News Articles</h1>
-</div>
-
-<!-- Search and Filter Form -->
-<div class="row mb-4">
-    <div class="col-md-12">
-        <form asp-controller="News" asp-action="Index" method="get" class="row g-2 align-items-center">
-            <div class="col-md-3 col-sm-6">
-                <input type="text" name="search" value="@searchTerm" class="form-control" placeholder="Search keywords..." />
-            </div>
-            <div class="col-md-3 col-sm-6">
-                <select name="category" class="form-select">
-                    <option value="">All Categories</option>
-                    <!option value="technology" @(string.Equals(selectedCategory, "technology", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Technology</!option>
-                    <!option value="business" @(string.Equals(selectedCategory, "business", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Business</!option>
-                    <!option value="sports" @(string.Equals(selectedCategory, "sports", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Sports</!option>
-                    <!option value="entertainment" @(string.Equals(selectedCategory, "entertainment", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Entertainment</!option>
-                    <!option value="science" @(string.Equals(selectedCategory, "science", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Science</!option>
-                    <!option value="health" @(string.Equals(selectedCategory, "health", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Health</!option>
-                    <!option value="politics" @(string.Equals(selectedCategory, "politics", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Politics</!option>
-                    <!option value="world" @(string.Equals(selectedCategory, "world", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>World</!option>
-                </select>
-            </div>
-            <div class="col-md-2 col-sm-6">
-                <select name="country" class="form-select">
-                    <option value="">All Countries</option>
-                    <!option value="IN" @(string.Equals(selectedCountry, "IN", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>India</!option>
-                    <!option value="US" @(string.Equals(selectedCountry, "US", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>United States</!option>
-                    <!option value="GB" @(string.Equals(selectedCountry, "GB", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>United Kingdom</!option>
-                </select>
-            </div>
-            <div class="col-md-2 col-sm-6">
-                <select name="language" class="form-select">
-                    <option value="">All Languages</option>
-                    <!option value="en" @(string.Equals(selectedLanguage, "en", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>English</!option>
-                    <!option value="hi" @(string.Equals(selectedLanguage, "hi", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Hindi</!option>
-                    <!option value="es" @(string.Equals(selectedLanguage, "es", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Spanish</!option>
-                </select>
-            </div>
-            <div class="col-md-2 col-sm-12 d-flex gap-2">
-                <button type="submit" class="btn btn-primary flex-grow-1">Filter</button>
-                <a asp-action="Index" class="btn btn-secondary">Reset</a>
-            </div>
-        </form>
+<div class="mb-4 pb-2 border-bottom d-flex justify-content-between align-items-end flex-wrap gap-2">
+    <div>
+        <h1 class="editorial-headline h2 mb-1">News &amp; Global Dispatches</h1>
+        <p class="text-muted small mb-0">Browse original reporting from NewsBase journalists and live international wire reports.</p>
+    </div>
+    <div class="small text-muted">
+        Updated: @DateTime.UtcNow.ToString("MMM dd, yyyy HH:mm") UTC
     </div>
 </div>
 
-@if (!string.IsNullOrEmpty(errorMessage))
-{
-    <div class="alert alert-warning" role="alert">
-        @errorMessage
-    </div>
-}
-else if (Model == null || !Model.Any())
-{
-    <div class="alert alert-info" role="alert">
-        No news articles found.
-    </div>
-}
-else
-{
-    <p class="text-muted">Showing @Model.Count articles</p>
+<!-- Search and Filter Bar -->
+<div class="card card-editorial p-3 mb-4 bg-light">
+    <form asp-controller="News" asp-action="Index" method="get" class="row g-2 align-items-end">
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label small fw-semibold text-muted mb-1" for="search">Keywords</label>
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                <input type="text" id="search" name="search" value="@Model.SearchTerm" class="form-control border-start-0" placeholder="Search stories..." />
+            </div>
+        </div>
 
-    <div class="row row-cols-1 row-cols-md-3 g-4">
-        @foreach (var item in Model)
+        <div class="col-lg-2 col-md-3 col-6">
+            <label class="form-label small fw-semibold text-muted mb-1" for="category">Category</label>
+            <select id="category" name="category" class="form-select">
+                <option value="">All Categories</option>
+                @foreach (var c in Model.Categories)
+                {
+                    <option value="@c.Slug" selected="@(string.Equals(Model.SelectedCategory, c.Slug, StringComparison.OrdinalIgnoreCase) || string.Equals(Model.SelectedCategory, c.Name, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">
+                        @c.Name
+                    </option>
+                }
+            </select>
+        </div>
+
+        <div class="col-lg-2 col-md-3 col-6">
+            <label class="form-label small fw-semibold text-muted mb-1" for="source">Source</label>
+            <select id="source" name="source" class="form-select">
+                <option value="all" selected="@(Model.SourceType == "all" ? "selected" : null)">All Stories</option>
+                <option value="editorial" selected="@(Model.SourceType == "editorial" ? "selected" : null)">NewsBase Only</option>
+                <option value="wire" selected="@(Model.SourceType == "wire" ? "selected" : null)">Live Wire Only</option>
+            </select>
+        </div>
+
+        <div class="col-lg-2 col-md-3 col-6">
+            <label class="form-label small fw-semibold text-muted mb-1" for="country">Country</label>
+            <select id="country" name="country" class="form-select">
+                <option value="">All Countries</option>
+                <option value="IN" selected="@(string.Equals(Model.SelectedCountry, "IN", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">India</option>
+                <option value="US" selected="@(string.Equals(Model.SelectedCountry, "US", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">United States</option>
+                <option value="GB" selected="@(string.Equals(Model.SelectedCountry, "GB", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">United Kingdom</option>
+            </select>
+        </div>
+
+        <div class="col-lg-3 col-md-9 col-12 d-flex gap-2">
+            <button type="submit" class="btn btn-editorial-primary flex-grow-1">Filter Feed</button>
+            <a asp-action="Index" class="btn btn-editorial-outline">Reset</a>
+        </div>
+    </form>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-warning py-2 px-3 mb-4 small" role="alert">
+        <i class="bi bi-info-circle me-1"></i>@Model.ErrorMessage
+    </div>
+}
+
+<!-- 1. NEWSBASE EDITORIAL STORIES -->
+@if (Model.SourceType != "wire")
+{
+    <div class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="editorial-headline h4 mb-0">
+                NewsBase Editorial Articles
+                <span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill ms-2 small" style="font-size: 0.75rem;">@Model.LocalArticles.Count()</span>
+            </h2>
+            @if (User.IsInRole("Author"))
+            {
+                <a asp-controller="Author" asp-action="Create" class="btn btn-sm btn-editorial-outline">+ Submit Article</a>
+            }
+        </div>
+
+        @if (!Model.LocalArticles.Any())
         {
-            <div class="col">
-                <div class="card h-100 shadow-sm">
-                    @if (!string.IsNullOrWhiteSpace(item.Image))
-                    {
-                        <img src="@item.Image" class="card-img-top" alt="@item.Title" style="height: 200px; object-fit: cover;" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800';" />
-                    }
-                    else
-                    {
-                        <img src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800" class="card-img-top" alt="Placeholder news image" style="height: 200px; object-fit: cover;" />
-                    }
-                    <div class="card-body d-flex flex-column">
-                        <div class="mb-2">
-                            @if (!string.IsNullOrWhiteSpace(item.Category))
+            <div class="alert alert-light border py-3 px-3 text-muted small">
+                No local NewsBase editorial stories matched your search filters.
+            </div>
+        }
+        else
+        {
+            <div class="row row-cols-1 row-cols-md-3 g-4">
+                @foreach (var article in Model.LocalArticles)
+                {
+                    <div class="col">
+                        <div class="card h-100 card-editorial">
+                            @if (!string.IsNullOrWhiteSpace(article.ImageUrl))
                             {
-                                <span class="badge bg-secondary">@item.Category</span>
+                                <img src="@article.ImageUrl" class="card-img-top border-bottom" alt="@article.Title" style="height: 190px; object-fit: cover;" onerror="this.style.display='none';" />
                             }
-                            @if (!string.IsNullOrWhiteSpace(item.Language))
-                            {
-                                <span class="badge bg-light text-dark border">@item.Language.ToUpper()</span>
-                            }
+                            <div class="card-body d-flex flex-column p-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge bg-secondary small">@(article.Category?.Name ?? "General")</span>
+                                    <span class="text-muted small"><i class="bi bi-eye me-1"></i>@article.ViewCount</span>
+                                </div>
+                                <h3 class="card-title h5 font-serif mb-2">
+                                    <a asp-controller="News" asp-action="Details" asp-route-slug="@article.Slug" class="text-dark text-decoration-none">
+                                        @article.Title
+                                    </a>
+                                </h3>
+                                <p class="card-text text-muted small flex-grow-1">
+                                    @(article.Summary.Length > 120 ? article.Summary.Substring(0, 120) + "..." : article.Summary)
+                                </p>
+                                <div class="mt-auto pt-2 border-top d-flex justify-content-between align-items-center small text-muted">
+                                    <span>By @(article.Author?.DisplayName ?? "Staff")</span>
+                                    <a asp-controller="News" asp-action="Details" asp-route-slug="@article.Slug" class="btn btn-sm btn-editorial-outline">
+                                        Read Story &rarr;
+                                    </a>
+                                </div>
+                            </div>
                         </div>
-                        <h5 class="card-title">@item.Title</h5>
-                        <p class="card-text text-muted flex-grow-1">
-                            @(string.IsNullOrWhiteSpace(item.Description) ? "No description provided." : item.Description)
-                        </p>
-                        <div class="text-muted small mb-3">
-                            <div><strong>Author:</strong> @(string.IsNullOrWhiteSpace(item.Author) ? "Staff" : item.Author)</div>
-                            <div><strong>Published:</strong> @(item.Published.HasValue ? item.Published.Value.ToString("yyyy-MM-dd HH:mm") : "Recently")</div>
-                        </div>
-                        @if (!string.IsNullOrWhiteSpace(item.Url))
-                        {
-                            <a href="@item.Url" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-sm mt-auto">
-                                Read Article &rarr;
-                            </a>
-                        }
                     </div>
-                </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+<!-- 2. GLOBAL LIVE WIRE (CURRENTS API) -->
+@if (Model.SourceType != "editorial")
+{
+    <div class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="editorial-headline h4 mb-0">
+                Global Live Wire
+                <span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill ms-2 small" style="font-size: 0.75rem;">@Model.LiveNews.Count</span>
+            </h2>
+            <small class="text-muted">Powered by Currents News Feed</small>
+        </div>
+
+        @if (!Model.LiveNews.Any())
+        {
+            <div class="alert alert-light border py-3 px-3 text-muted small">
+                No external wire dispatches found for the selected criteria.
+            </div>
+        }
+        else
+        {
+            <div class="row row-cols-1 row-cols-md-3 g-4">
+                @foreach (var item in Model.LiveNews)
+                {
+                    <div class="col">
+                        <div class="card h-100 card-editorial">
+                            @if (!string.IsNullOrWhiteSpace(item.Image))
+                            {
+                                <img src="@item.Image" class="card-img-top border-bottom" alt="@item.Title" style="height: 190px; object-fit: cover;" onerror="this.style.display='none';" />
+                            }
+                            <div class="card-body d-flex flex-column p-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge bg-light text-dark border small">@(string.IsNullOrWhiteSpace(item.Category) ? "Wire" : item.Category)</span>
+                                    @if (!string.IsNullOrWhiteSpace(item.Language))
+                                    {
+                                        <span class="badge bg-light text-secondary border small">@item.Language.ToUpper()</span>
+                                    }
+                                </div>
+                                <h3 class="card-title h6 font-serif mb-2">
+                                    @if (!string.IsNullOrWhiteSpace(item.Url))
+                                    {
+                                        <a href="@item.Url" target="_blank" rel="noopener noreferrer" class="text-dark text-decoration-none">
+                                            @item.Title
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span>@item.Title</span>
+                                    }
+                                </h3>
+                                <p class="card-text text-muted small flex-grow-1">
+                                    @(string.IsNullOrWhiteSpace(item.Description) ? "No excerpt available." : (item.Description.Length > 120 ? item.Description.Substring(0, 120) + "..." : item.Description))
+                                </p>
+                                <div class="mt-auto pt-2 border-top d-flex justify-content-between align-items-center small text-muted">
+                                    <span>@(item.Published.HasValue ? item.Published.Value.ToString("MMM dd, yyyy") : "Recent")</span>
+                                    @if (!string.IsNullOrWhiteSpace(item.Url))
+                                    {
+                                        <a href="@item.Url" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-editorial-outline">
+                                            Wire Dispatch &nearr;
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
             </div>
         }
     </div>

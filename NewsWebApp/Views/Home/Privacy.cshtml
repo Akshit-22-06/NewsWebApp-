@@ -1,19 +1,53 @@
 @{
     ViewData["Title"] = "Privacy Policy";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<div class="container my-4" style="max-width: 860px;">
+    <div class="mb-4 pb-2 border-bottom">
+        <h1 class="editorial-headline h2 mb-1">Privacy Policy</h1>
+        <p class="text-muted small mb-0">Effective Date: November 2, 2026 &bull; NewsBase Publishing Group</p>
+    </div>
 
-<p>
-    We collect only the minimal information required to provide secure authentication, manage comments, and track aggregate
-    article readership metrics to improve editorial coverage.
-</p>
-<p>
-    NewsSphere utilizes secure HTTP-only cookies strictly for maintaining authenticated session states and preventing cross-site
-    request forgery (CSRF/XSRF) through ASP.NET Core anti-forgery tokens. We do not sell user data or employ invasive third-party
-    behavioral trackers.
-</p>
-<p>
-    Every registered reader has the right to review, update, or request deletion of their account and submitted comments at any time.
-</p>
+    <div class="editorial-body">
+        <p class="lead">
+            NewsBase is committed to transparent, privacy-first journalism. We collect only the data necessary to provide reader accounts, author publishing workflows, and secure community comments.
+        </p>
+
+        <h4 class="h5 font-serif mt-4 mb-2">1. Information We Collect</h4>
+        <ul>
+            <li><strong>Account Information:</strong> When you register as a reader or author, we store your name, email address, and encrypted password hash using ASP.NET Core Identity.</li>
+            <li><strong>Author Profiles:</strong> Authors provide a display name, optional biography, and profile image URL for article bylines.</li>
+            <li><strong>Reader Contributions:</strong> Public comments, article bookmarks, and story likes you choose to submit.</li>
+            <li><strong>Newsletter Subscriptions:</strong> Your email address when you voluntarily subscribe to the daily news briefing.</li>
+        </ul>
+
+        <h4 class="h5 font-serif mt-4 mb-2">2. How We Use Information</h4>
+        <p>
+            Your information is used strictly to authenticate your sessions, attribute articles and comments to your profile, and deliver requested email newsletters. We do not sell, rent, or monetize reader data with advertising brokers.
+        </p>
+
+        <h4 class="h5 font-serif mt-4 mb-2">3. Cookies &amp; Session Security</h4>
+        <p>
+            NewsBase utilizes secure, HTTP-only cookies strictly for:
+        </p>
+        <ul>
+            <li>Maintaining authenticated login sessions via encrypted ASP.NET Core Identity cookies.</li>
+            <li>Preventing Cross-Site Request Forgery (CSRF) through cryptographic anti-forgery tokens on all form submissions.</li>
+        </ul>
+        <p>We do not use invasive third-party cross-site behavioral tracking cookies.</p>
+
+        <h4 class="h5 font-serif mt-4 mb-2">4. AI Editorial Moderation Data Handling</h4>
+        <p>
+            When authors submit articles for editorial review, the article title, summary, and body text are transmitted via secure HTTPS to the Google Gemini API for automated policy and quality evaluation. No reader credentials, passwords, or personal banking data are ever transmitted to AI services.
+        </p>
+
+        <h4 class="h5 font-serif mt-4 mb-2">5. User Rights &amp; Data Deletion</h4>
+        <p>
+            You have the right to access, edit, or delete your account, comments, and submitted drafts. To request account deletion or data export, contact our privacy desk at <code>privacy@newsbase.org</code>.
+        </p>
+    </div>
+
+    <div class="mt-4 pt-3 border-top text-muted small">
+        For inquiries regarding our data handling or journalistic integrity, write to <code>privacy@newsbase.org</code>.
+    </div>
+</div>

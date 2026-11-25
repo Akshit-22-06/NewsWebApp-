@@ -1,30 +1,324 @@
-html {
-  font-size: 14px;
+/* ==========================================================================
+   NewsBase Editorial Design System
+   Classic journalistic aesthetic: high-legibility typography, clear hierarchy,
+   and authentic newspaper styling (Zero "vibecoding" fads or artificial gradients).
+   ========================================================================== */
+
+:root {
+    --font-serif: 'Newsreader', 'Georgia', 'Cambria', 'Times New Roman', serif;
+    --font-sans: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-masthead: 'Newsreader', 'Georgia', serif;
+
+    /* Palette: Restrained, ink & paper authentic palette */
+    --color-ink: #0f172a;
+    --color-charcoal: #1e293b;
+    --color-body: #334155;
+    --color-muted: #64748b;
+    --color-border: #e2e8f0;
+    --color-border-dark: #cbd5e1;
+    --color-bg-paper: #ffffff;
+    --color-bg-warm: #f8fafc;
+    --color-accent-crimson: #991b1b;
+    --color-accent-navy: #0f3460;
+    --color-accent-blue: #1d4ed8;
 }
 
-@media (min-width: 768px) {
-  html {
+html {
     font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
+    position: relative;
+    min-height: 100%;
 }
 
 body {
-  margin-bottom: 60px;
+    font-family: var(--font-sans);
+    color: var(--color-body);
+    background-color: var(--color-bg-paper);
+    line-height: 1.6;
+    margin-bottom: 90px;
+    -webkit-font-smoothing: antialiased;
 }
 
-.footer {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  white-space: nowrap;
-  line-height: 60px;
+/* ==========================================================================
+   Typography & Editorial Headings
+   ========================================================================== */
+h1, h2, h3, h4, .editorial-headline, .font-serif {
+    font-family: var(--font-serif);
+    color: var(--color-ink);
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.015em;
+}
+
+.editorial-title {
+    font-family: var(--font-serif);
+    color: var(--color-ink);
+    font-size: 2.35rem;
+    font-weight: 800;
+    line-height: 1.18;
+    margin-bottom: 0.75rem;
+}
+
+.editorial-standfirst {
+    font-family: var(--font-serif);
+    font-size: 1.25rem;
+    color: #475569;
+    line-height: 1.5;
+    font-style: italic;
+    font-weight: 400;
+}
+
+.editorial-body {
+    font-family: var(--font-serif);
+    font-size: 1.15rem;
+    line-height: 1.85;
+    color: #1e293b;
+}
+
+.editorial-body p {
+    margin-bottom: 1.4rem;
+}
+
+/* ==========================================================================
+   Masthead & Header
+   ========================================================================== */
+.site-masthead-bar {
+    border-bottom: 1px solid var(--color-border);
+    background-color: var(--color-bg-paper);
+    font-size: 0.825rem;
+    color: var(--color-muted);
+}
+
+.site-masthead {
+    border-bottom: 3px double #0f172a;
+    padding: 1.25rem 0 0.85rem 0;
+    background-color: var(--color-bg-paper);
+}
+
+.site-brand-logo {
+    font-family: var(--font-serif);
+    font-size: 2.85rem;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    color: var(--color-ink) !important;
+    text-decoration: none;
+    line-height: 1;
+}
+
+.site-brand-logo:hover {
+    color: var(--color-accent-crimson) !important;
+}
+
+.site-tagline {
+    font-size: 0.825rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--color-muted);
+    font-weight: 600;
+    margin-top: 0.25rem;
+}
+
+/* Category & Main Navigation */
+.editorial-navbar {
+    border-bottom: 1px solid var(--color-border);
+    background-color: var(--color-bg-paper);
+    padding: 0.35rem 0;
+}
+
+.editorial-navbar .nav-link {
+    font-size: 0.925rem;
+    font-weight: 600;
+    color: #334155;
+    padding: 0.45rem 0.85rem !important;
+    text-transform: capitalize;
+    transition: color 0.15s ease-in-out;
+}
+
+.editorial-navbar .nav-link:hover {
+    color: var(--color-accent-crimson);
+}
+
+.editorial-navbar .nav-link.active {
+    color: var(--color-accent-crimson);
+    border-bottom: 2px solid var(--color-accent-crimson);
+}
+
+.badge-editorial {
+    font-family: var(--font-sans);
+    font-size: 0.725rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.25rem 0.6rem;
+    border-radius: 2px;
+}
+
+/* ==========================================================================
+   Editorial Cards & Grid Layouts
+   ========================================================================== */
+.card-editorial {
+    background-color: #ffffff;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.card-editorial:hover {
+    border-color: var(--color-border-dark);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+
+.story-lead-border {
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.section-rule {
+    border: 0;
+    border-top: 2px solid var(--color-ink);
+    opacity: 1;
+    margin: 1.5rem 0 1rem 0;
+}
+
+.section-rule-subtle {
+    border: 0;
+    border-top: 1px solid var(--color-border);
+    opacity: 1;
+    margin: 1.5rem 0 1rem 0;
+}
+
+.section-heading-tag {
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--color-ink);
+    border-bottom: 2px solid var(--color-ink);
+    display: inline-block;
+    padding-bottom: 0.2rem;
+    margin-bottom: 1rem;
+}
+
+/* ==========================================================================
+   Forms & Buttons
+   ========================================================================== */
+.btn-editorial-primary {
+    background-color: var(--color-ink);
+    border-color: var(--color-ink);
+    color: #ffffff;
+    font-weight: 600;
+    border-radius: 3px;
+    padding: 0.45rem 1.15rem;
+}
+
+.btn-editorial-primary:hover {
+    background-color: #1e293b;
+    border-color: #1e293b;
+    color: #ffffff;
+}
+
+.btn-editorial-outline {
+    border: 1px solid var(--color-border-dark);
+    color: var(--color-charcoal);
+    font-weight: 600;
+    background: transparent;
+    border-radius: 3px;
+}
+
+.btn-editorial-outline:hover {
+    background-color: var(--color-bg-warm);
+    color: var(--color-ink);
+    border-color: var(--color-charcoal);
+}
+
+.form-control, .form-select {
+    border: 1px solid var(--color-border-dark);
+    border-radius: 3px;
+    font-size: 0.95rem;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--color-ink);
+    box-shadow: 0 0 0 1px var(--color-ink);
+}
+
+/* ==========================================================================
+   Footer
+   ========================================================================== */
+.editorial-footer {
+    border-top: 3px double #0f172a;
+    background-color: var(--color-bg-warm);
+    font-size: 0.875rem;
+    color: var(--color-muted);
+    padding: 2.5rem 0 1.5rem 0;
+    margin-top: 3rem;
+}
+
+.editorial-footer a {
+    color: #475569;
+    text-decoration: none;
+    transition: color 0.15s ease-in-out;
+}
+
+.editorial-footer a:hover {
+    color: var(--color-accent-crimson);
+    text-decoration: underline;
+}
+
+.editorial-footer-heading {
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-ink);
+    margin-bottom: 0.75rem;
+}
+
+/* ==========================================================================
+   The Morning Dispatch - Newsletter Subscription Component
+   ========================================================================== */
+.newsletter-dispatch-box {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.newsletter-dispatch-box .editorial-headline {
+    font-family: var(--font-serif);
+    color: #0f172a;
+    letter-spacing: -0.01em;
+}
+
+.newsletter-dispatch-box input[type="email"] {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.9rem;
+    color: #0f172a;
+}
+
+.newsletter-dispatch-box input[type="email"]:focus {
+    border-color: #0f172a;
+    box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.1);
+    outline: none;
+}
+
+.newsletter-dispatch-box .btn-editorial-primary {
+    background-color: #0f172a;
+    border-color: #0f172a;
+    color: #ffffff;
+    font-weight: 600;
+    padding: 0.55rem;
+    border-radius: 4px;
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+
+.newsletter-dispatch-box .btn-editorial-primary:hover {
+    background-color: #1e293b;
+    border-color: #1e293b;
+    color: #ffffff;
 }

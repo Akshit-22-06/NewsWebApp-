@@ -1,31 +1,45 @@
+@{
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+}
+
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 pb-2 border-bottom">
-    <ul class="nav nav-pills">
+    <ul class="nav nav-pills small">
         <li class="nav-item">
-            <a asp-controller="Admin" asp-action="Index" class="nav-link">Dashboard</a>
+            <a asp-controller="Admin" asp-action="Index" class="nav-link @(currentAction == "Index" ? "active" : "")">Dashboard</a>
         </li>
         <li class="nav-item">
-            <a asp-controller="Admin" asp-action="Articles" class="nav-link">Articles</a>
+            <a asp-controller="Admin" asp-action="Articles" class="nav-link @(currentAction == "Articles" || currentAction == "ReviewArticle" ? "active" : "")">Articles</a>
         </li>
         <li class="nav-item">
-            <a asp-controller="Admin" asp-action="Categories" class="nav-link">Categories</a>
+            <a asp-controller="Admin" asp-action="AiModeration" class="nav-link @(currentAction == "AiModeration" ? "active" : "")">
+                <i class="bi bi-cpu me-1"></i>AI Moderation
+            </a>
         </li>
         <li class="nav-item">
-            <a asp-controller="Admin" asp-action="LiveNews" class="nav-link">Currents News</a>
+            <a asp-controller="Admin" asp-action="Categories" class="nav-link @(currentAction.Contains("Category") ? "active" : "")">Categories</a>
         </li>
         <li class="nav-item">
-            <a asp-controller="Admin" asp-action="Subscribers" class="nav-link">Subscribers</a>
+            <a asp-controller="Admin" asp-action="Comments" class="nav-link @(currentAction == "Comments" ? "active" : "")">Comments</a>
         </li>
         <li class="nav-item">
-            <a asp-controller="Admin" asp-action="Comments" class="nav-link">Comments</a>
+            <a asp-controller="Admin" asp-action="Subscribers" class="nav-link @(currentAction == "Subscribers" ? "active" : "")">
+                <i class="bi bi-envelope-paper me-1"></i>Newsletter
+            </a>
         </li>
         <li class="nav-item">
-            <a asp-controller="Admin" asp-action="Users" class="nav-link">Users</a>
+            <a asp-controller="Admin" asp-action="Users" class="nav-link @(currentAction == "Users" ? "active" : "")">Users</a>
+        </li>
+        <li class="nav-item">
+            <a asp-controller="Admin" asp-action="LiveNews" class="nav-link @(currentAction == "LiveNews" ? "active" : "")">Wire Feed</a>
+        </li>
+        <li class="nav-item">
+            <a asp-controller="Admin" asp-action="Settings" class="nav-link @(currentAction == "Settings" ? "active" : "")">Settings</a>
         </li>
     </ul>
 
     <div>
-        <a asp-controller="Admin" asp-action="CreateArticle" class="btn btn-primary">
-            + Create New Article
+        <a asp-controller="Admin" asp-action="CreateArticle" class="btn btn-sm btn-editorial-primary">
+            + New Article
         </a>
     </div>
 </div>

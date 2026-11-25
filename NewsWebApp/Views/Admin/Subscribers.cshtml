@@ -1,65 +1,420 @@
-@model IEnumerable<NewsWebApp.Models.NewsletterSubscriber>
+@model NewsWebApp.ViewModels.AdminNewsletterViewModel
 @{
-    ViewData["Title"] = "Subscribers";
+    ViewData["Title"] = "The Morning Dispatch & Subscribers";
+    var isDispatchTab = Model.ActiveTab == "dispatch";
 }
 
-<h1>Newsletter Subscribers</h1>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="h2 mb-1">The Morning Dispatch & Newsletter Desk</h1>
+        <p class="text-muted small mb-0">Automated morning news digest curation, scheduling, delivery tracking, and reader circulation.</p>
+    </div>
+</div>
 
 <partial name="_AdminNav" />
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h4>Subscriber List</h4>
-    <span class="badge bg-success">
-        @Model.Count(s => s.IsActive) Active
-    </span>
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+        <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+        <div>@TempData["SuccessMessage"]</div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+        <div>@TempData["ErrorMessage"]</div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- Key Metric Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-editorial p-3">
+            <div class="text-muted small text-uppercase fw-bold letter-spacing-1">Active Subscribers</div>
+            <div class="h3 mb-0 text-success fw-bold">@Model.ActiveSubscribersCount</div>
+            <div class="text-muted small mt-1">Ready for 7:00 AM IST dispatch</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-editorial p-3">
+            <div class="text-muted small text-uppercase fw-bold letter-spacing-1">Unsubscribed</div>
+            <div class="h3 mb-0 text-secondary fw-bold">@Model.UnsubscribedCount</div>
+            <div class="text-muted small mt-1">Opted out (excluded from delivery)</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-editorial p-3">
+            <div class="text-muted small text-uppercase fw-bold letter-spacing-1">Daily Automated Schedule</div>
+            <div class="h4 mb-0 text-dark fw-bold">
+                @Model.Settings.SendHour.ToString("D2"):@Model.Settings.SendMinute.ToString("D2") IST
+            </div>
+            <div class="small mt-1">
+                @if (Model.Settings.IsAutoSendEnabled)
+                {
+                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Active / Running</span>
+                }
+                else
+                {
+                    <span class="badge bg-warning text-dark"><i class="bi bi-pause-circle me-1"></i>Paused</span>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-editorial p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="text-muted small text-uppercase fw-bold letter-spacing-1">Brevo Free Daily Quota</span>
+                <span class="badge @(Model.QuotaInfo.RemainingToday > 50 ? "bg-success" : "bg-warning text-dark")">
+                    @Model.QuotaInfo.RemainingToday left
+                </span>
+            </div>
+            <div class="h3 mb-0 text-dark fw-bold mt-1">
+                @Model.QuotaInfo.UsedToday <span class="fs-6 text-muted fw-normal">/ @Model.QuotaInfo.DailyLimit sent today</span>
+            </div>
+            @{
+                int quotaPercent = Model.QuotaInfo.DailyLimit > 0 
+                    ? (int)Math.Min(100, Math.Round((double)Model.QuotaInfo.UsedToday / Model.QuotaInfo.DailyLimit * 100)) 
+                    : 0;
+            }
+            <div class="progress mt-2" style="height: 6px;">
+                <div class="progress-bar @(quotaPercent >= 90 ? "bg-danger" : quotaPercent >= 70 ? "bg-warning" : "bg-primary")" 
+                     role="progressbar" 
+                     style="width: @quotaPercent%;" 
+                     aria-valuenow="@quotaPercent" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
+                </div>
+            </div>
+            <div class="d-flex justify-content-between text-muted small mt-1" style="font-size: 0.72rem;">
+                <span>@quotaPercent% of 300 free limit</span>
+                <span>Reset: 00:00 UTC (05:30 IST)</span>
+            </div>
+            @if (Model.QuotaInfo.IsLiveAccountChecked && !string.IsNullOrWhiteSpace(Model.QuotaInfo.AccountEmail))
+            {
+                <div class="text-truncate text-success small mt-1" style="font-size: 0.72rem;">
+                    <i class="bi bi-shield-check me-1"></i>Live: @Model.QuotaInfo.AccountEmail
+                </div>
+            }
+        </div>
+    </div>
 </div>
 
-<table class="table table-striped table-hover align-middle">
-    <thead>
-        <tr>
-            <th>#</th>
-            <th>Email</th>
-            <th>Subscribed Date</th>
-            <th>Status</th>
-            <th class="text-end">Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @if (!Model.Any())
-        {
-            <tr>
-                <td colspan="5" class="text-center text-muted py-4">
-                    No subscribers found.
-                </td>
-            </tr>
-        }
-        @foreach (var sub in Model)
-        {
-            <tr>
-                <td>@sub.Id</td>
-                <td>
-                    <strong>@sub.Email</strong>
-                </td>
-                <td class="text-muted small">
-                    @sub.SubscribedAt.ToString("yyyy-MM-dd HH:mm")
-                </td>
-                <td>
-                    @if (sub.IsActive)
-                    {
-                        <span class="badge bg-success">Active</span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-secondary">Inactive</span>
-                    }
-                </td>
-                <td class="text-end">
-                    <form asp-action="DeleteSubscriber" asp-route-id="@sub.Id" method="post" class="d-inline" onsubmit="return confirm('Remove @sub.Email from subscriber list?');">
+<!-- Navigation Tabs -->
+<ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+        <a class="nav-link @(isDispatchTab ? "active fw-semibold" : "")" asp-action="Subscribers" asp-route-tab="dispatch">
+            <i class="bi bi-newspaper me-1"></i> Automated Dispatch & Editions
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(!isDispatchTab ? "active fw-semibold" : "")" asp-action="Subscribers" asp-route-tab="subscribers">
+            <i class="bi bi-people me-1"></i> Subscribers Directory (@Model.TotalSubscribersCount)
+        </a>
+    </li>
+</ul>
+
+@if (isDispatchTab)
+{
+    <!-- TAB 1: AUTOMATED DISPATCH & EDITIONS -->
+    <div class="row g-4 mb-4">
+        <!-- Manual Action & Schedule Panel -->
+        <div class="col-lg-7">
+            <div class="card card-editorial p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                    <h3 class="h5 mb-0">Editorial Dispatch Control</h3>
+                    <form asp-action="GenerateNewsletter" method="post" class="d-inline" onsubmit="this.querySelector('button').disabled = true;">
                         @Html.AntiForgeryToken()
-                        <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                        <button type="submit" class="btn btn-editorial-primary btn-sm">
+                            <i class="bi bi-magic me-1"></i> Curate & Generate Today's Edition
+                        </button>
                     </form>
-                </td>
-            </tr>
+                </div>
+
+                <div class="p-3 bg-light rounded border mb-3">
+                    <div class="row g-2 text-muted small">
+                        <div class="col-6"><strong>Next Scheduled Run:</strong> @(Model.SchedulerStatus.NextRunAtIst?.ToString("yyyy-MM-dd HH:mm") ?? "Pending calculation") IST</div>
+                        <div class="col-6"><strong>Last Run Result:</strong> @(Model.SchedulerStatus.LastRunStatus ?? "None recorded")</div>
+                        <div class="col-12 mt-1"><strong>Automated Workflow:</strong> Currents API News + Today's Events &rarr; Gemini AI Curation &rarr; Batch Delivery &rarr; Log & Archive.</div>
+                    </div>
+                </div>
+
+                <h4 class="h6 mb-2">Schedule & Delivery Configuration</h4>
+                <form asp-action="UpdateNewsletterSettings" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Send Hour (0-23 IST)</label>
+                            <input type="number" name="sendHour" min="0" max="23" class="form-control form-control-sm" value="@Model.Settings.SendHour" required />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Send Minute (0-59)</label>
+                            <input type="number" name="sendMinute" min="0" max="59" class="form-control form-control-sm" value="@Model.Settings.SendMinute" required />
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <div class="form-check form-switch mb-1">
+                                <input class="form-check-input" type="checkbox" name="isAutoSendEnabled" value="true" id="autoSendSwitch" @(Model.Settings.IsAutoSendEnabled ? "checked" : "") />
+                                <label class="form-check-label small fw-semibold" for="autoSendSwitch">Enable Auto-Send</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Sender Display Name</label>
+                            <input type="text" name="senderName" class="form-control form-control-sm" value="@Model.Settings.SenderName" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Sender Email Address</label>
+                            <input type="email" name="senderEmail" class="form-control form-control-sm" value="@Model.Settings.SenderEmail" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Admin Test Email (Optional Default)</label>
+                            <input type="email" name="adminTestEmail" class="form-control form-control-sm" value="@Model.Settings.AdminTestEmail" placeholder="admin@newsbase.com" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Brevo Daily Free Quota Limit</label>
+                            <input type="number" name="dailyEmailQuota" class="form-control form-control-sm" value="@Model.Settings.DailyEmailQuota" min="1" max="10000" />
+                            <div class="text-muted" style="font-size: 0.72rem;">Brevo standard free tier is 300 emails/24h.</div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">Save Configuration</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Quick Test Email Card -->
+        <div class="col-lg-5">
+            <div class="card card-editorial p-4 h-100">
+                <h3 class="h5 mb-2">Test Dispatch to Admin</h3>
+                <p class="text-muted small mb-3">Send a preview of the latest curated edition to yourself without emailing active subscribers.</p>
+
+                @if (Model.Editions.Any())
+                {
+                    var latestEdition = Model.Editions.First();
+                    <div class="p-3 bg-light rounded border mb-3">
+                        <div class="small fw-semibold text-dark">Latest Edition: @latestEdition.EditionDate</div>
+                        <div class="small text-muted text-truncate">@latestEdition.Subject</div>
+                        <div class="small text-muted mt-1">Status: <span class="badge @(latestEdition.Status == "Sent" ? "bg-success" : "bg-secondary")">@latestEdition.Status</span></div>
+                    </div>
+
+                    <form asp-action="SendTestNewsletter" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@latestEdition.Id" />
+                        <div class="mb-2">
+                            <label class="form-label small fw-semibold">Recipient Email Address</label>
+                            <input type="email" name="testEmail" class="form-control form-control-sm" value="@(Model.Settings.AdminTestEmail ?? User.Identity?.Name ?? "admin@newsbase.com")" required />
+                        </div>
+                        <button type="submit" class="btn btn-editorial-outline btn-sm w-100">
+                            <i class="bi bi-send me-1"></i> Send Test Email Now
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <div class="text-center py-4 text-muted small">
+                        <i class="bi bi-file-earmark-text fs-3 d-block mb-2"></i>
+                        No editions generated yet. Click <strong>"Curate & Generate Today's Edition"</strong> to build the first issue.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Past Editions History Table -->
+    <div class="card card-editorial p-4">
+        <h3 class="h5 mb-3">The Morning Dispatch &bull; Edition Archives</h3>
+
+        @if (!Model.Editions.Any())
+        {
+            <div class="text-center py-4 text-muted">
+                No editions found in the archive.
+            </div>
         }
-    </tbody>
-</table>
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Edition Date</th>
+                            <th>Subject</th>
+                            <th>Status</th>
+                            <th>Deliveries</th>
+                            <th>Sent Timestamp</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var ed in Model.Editions)
+                        {
+                            <tr>
+                                <td><strong>@ed.EditionDate</strong></td>
+                                <td>
+                                    <div class="text-dark fw-semibold" style="max-width: 380px;">@ed.Subject</div>
+                                    @if (!string.IsNullOrWhiteSpace(ed.ErrorDetails))
+                                    {
+                                        <small class="text-danger d-block text-truncate" style="max-width: 380px;">@ed.ErrorDetails</small>
+                                    }
+                                </td>
+                                <td>
+                                    @if (ed.Status == "Sent")
+                                    {
+                                        <span class="badge bg-success">Sent</span>
+                                    }
+                                    else if (ed.Status == "PartiallySent")
+                                    {
+                                        <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>Partially Sent</span>
+                                    }
+                                    else if (ed.Status == "Sending")
+                                    {
+                                        <span class="badge bg-info text-dark">Sending</span>
+                                    }
+                                    else if (ed.Status == "Failed")
+                                    {
+                                        <span class="badge bg-danger">Failed</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Draft</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (ed.Status == "Sent" || ed.Status == "PartiallySent" || ed.Status == "Sending")
+                                    {
+                                        <div class="small text-muted">
+                                            <strong>@ed.SuccessfulDeliveries</strong> / @ed.TotalRecipients delivered
+                                            @if (ed.QueuedCount > 0)
+                                            {
+                                                <div class="text-warning fw-semibold" style="font-size: 0.72rem;">(@ed.QueuedCount queued for quota reset)</div>
+                                            }
+                                            @if (ed.FailedDeliveries > 0)
+                                            {
+                                                <div class="text-danger" style="font-size: 0.72rem;">(@ed.FailedDeliveries failed)</div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">Not dispatched</span>
+                                    }
+                                </td>
+                                <td class="text-muted small">
+                                    @(ed.SentAt?.ToString("yyyy-MM-dd HH:mm") ?? "—")
+                                </td>
+                                <td class="text-end">
+                                    <a asp-action="NewsletterEditionPreview" asp-route-id="@ed.Id" target="_blank" class="btn btn-outline-secondary btn-sm me-1" title="Preview rendered HTML">
+                                        <i class="bi bi-eye"></i> Preview
+                                    </a>
+
+                                    @if (ed.Status == "PartiallySent")
+                                    {
+                                        <form asp-action="ResumeQueuedDispatch" asp-route-id="@ed.Id" method="post" class="d-inline" onsubmit="return confirm('Resume dispatching to the @ed.QueuedCount queued subscribers?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-warning btn-sm">
+                                                <i class="bi bi-play-circle me-1"></i> Resume Queued
+                                            </button>
+                                        </form>
+                                    }
+                                    else if (ed.Status != "Sent")
+                                    {
+                                        <form asp-action="SendNewsletter" asp-route-id="@ed.Id" method="post" class="d-inline" onsubmit="return confirm('Send edition for @ed.EditionDate to all @Model.ActiveSubscribersCount active subscribers?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-editorial-primary btn-sm">
+                                                <i class="bi bi-send"></i> Send to All
+                                            </button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <!-- TAB 2: SUBSCRIBERS DIRECTORY -->
+    <div class="card card-editorial p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <h3 class="h5 mb-0">Subscribers Circulation List</h3>
+            <form method="get" class="d-flex gap-2">
+                <input type="hidden" name="tab" value="subscribers" />
+                <input type="text" name="search" class="form-control form-control-sm" placeholder="Search email..." value="@Model.SearchQuery" />
+                <button type="submit" class="btn btn-sm btn-outline-secondary">Search</button>
+                @if (!string.IsNullOrWhiteSpace(Model.SearchQuery))
+                {
+                    <a asp-action="Subscribers" asp-route-tab="subscribers" class="btn btn-sm btn-outline-danger">Clear</a>
+                }
+            </form>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Subscriber Email</th>
+                        <th>Subscribed Date</th>
+                        <th>Status</th>
+                        <th>Personal Unsubscribe Link</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Subscribers.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                No subscribers found matching the criteria.
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var sub in Model.Subscribers)
+                    {
+                        <tr>
+                            <td>@sub.Id</td>
+                            <td>
+                                <strong>@sub.Email</strong>
+                            </td>
+                            <td class="text-muted small">
+                                @sub.SubscribedAt.ToString("yyyy-MM-dd HH:mm")
+                            </td>
+                            <td>
+                                @if (sub.IsActive)
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Unsubscribed</span>
+                                }
+                            </td>
+                            <td>
+                                <a asp-controller="Newsletter" asp-action="Unsubscribe" asp-route-token="@sub.UnsubscribeToken" target="_blank" class="small text-muted text-decoration-none">
+                                    <i class="bi bi-box-arrow-up-right me-1"></i>Preferences Page
+                                </a>
+                            </td>
+                            <td class="text-end">
+                                <form asp-action="ToggleSubscriber" asp-route-id="@sub.Id" asp-route-tab="subscribers" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm @(sub.IsActive ? "btn-outline-warning" : "btn-outline-success") me-1">
+                                        @(sub.IsActive ? "Deactivate" : "Reactivate")
+                                    </button>
+                                </form>
+
+                                <form asp-action="DeleteSubscriber" asp-route-id="@sub.Id" asp-route-tab="subscribers" method="post" class="d-inline" onsubmit="return confirm('Permanently remove @sub.Email from subscribers?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

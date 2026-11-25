@@ -47,37 +47,71 @@ namespace NewsWebApp.Controllers
             string? search, 
             string? category, 
             string? country, 
-            string? language)
+            string? language,
+            string? source = "all")
         {
-            ViewBag.SearchTerm = search;
-            ViewBag.SelectedCategory = category;
-            ViewBag.SelectedCountry = country;
-            ViewBag.SelectedLanguage = language;
+            var categories = await _categoryRepo.GetAllAsync();
+            int? matchedCategoryId = null;
 
-            try
+            if (!string.IsNullOrWhiteSpace(category))
             {
-                List<NewsDto> news;
-                if (!string.IsNullOrWhiteSpace(search))
-                {
-                    news = await _newsService.SearchNewsAsync(search.Trim(), category, country, language);
-                }
-                else if (!string.IsNullOrWhiteSpace(category))
-                {
-                    news = await _newsService.GetNewsByCategoryAsync(category.Trim());
-                }
-                else
-                {
-                    news = await _newsService.GetLatestNewsAsync(category, country, language);
-                }
+                var cat = categories.FirstOrDefault(c => 
+                    c.Slug.Equals(category, StringComparison.OrdinalIgnoreCase) || 
+                    c.Name.Equals(category, StringComparison.OrdinalIgnoreCase));
+                matchedCategoryId = cat?.Id;
+            }
 
-                return View("Index", news);
-            }
-            catch (Exception ex)
+            // 1. Fetch NewsBase local published articles
+            var (localArticles, _) = await _newsRepo.GetPagedAdminAsync(
+                search: search,
+                categoryId: matchedCategoryId,
+                isPublished: true,
+                page: 1,
+                pageSize: 30,
+                status: ArticleStatus.Approved);
+
+            // 2. Fetch Currents API live wire news
+            List<NewsDto> liveNews = new();
+            string? errorMessage = null;
+
+            if (source != "editorial")
             {
-                _logger.LogError(ex, "Failed to load news from Currents API.");
-                ViewBag.ErrorMessage = "Unable to load news right now. Please try again later.";
-                return View("Index", new List<NewsDto>());
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(search))
+                    {
+                        liveNews = await _newsService.SearchNewsAsync(search.Trim(), category, country, language);
+                    }
+                    else if (!string.IsNullOrWhiteSpace(category))
+                    {
+                        liveNews = await _newsService.GetNewsByCategoryAsync(category.Trim());
+                    }
+                    else
+                    {
+                        liveNews = await _newsService.GetLatestNewsAsync(category, country, language);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to load live wire news from Currents API.");
+                    errorMessage = "Global live wire is currently slow or unavailable. Showing NewsBase editorial stories.";
+                }
             }
+
+            var viewModel = new NewsIndexViewModel
+            {
+                LocalArticles = localArticles,
+                LiveNews = liveNews,
+                Categories = categories,
+                SearchTerm = search,
+                SelectedCategory = category,
+                SelectedCountry = country,
+                SelectedLanguage = language,
+                SourceType = source ?? "all",
+                ErrorMessage = errorMessage
+            };
+
+            return View("Index", viewModel);
         }
 
         // GET: /news/search or /search?q=technology
@@ -116,7 +150,22 @@ namespace NewsWebApp.Controllers
                 return NotFound();
             }
 
-            await _newsRepo.IncrementViewCountAsync(article.Id);
+            // Minimal privacy-preserving viewer hash to throttle duplicate view spamming
+            string? viewerHash = null;
+            try
+            {
+                var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                var userAgent = Request.Headers.UserAgent.ToString();
+                using var sha = System.Security.Cryptography.SHA256.Create();
+                var hashBytes = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes($"{ip}|{userAgent}"));
+                viewerHash = Convert.ToHexString(hashBytes)[..16];
+            }
+            catch
+            {
+                // Non-blocking fallback
+            }
+
+            await _newsRepo.IncrementViewCountAsync(article.Id, viewerHash);
 
             var related = await _newsRepo.GetRelatedAsync(article.Id, article.CategoryId, 3);
             bool isBookmarked = !string.IsNullOrEmpty(userId) && await _bookmarkRepo.IsBookmarkedAsync(userId, article.Id);
@@ -138,6 +187,7 @@ namespace NewsWebApp.Controllers
 
         // POST: /news/like/{id}
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Like(int id, string? returnUrl, string? slug)
         {
             await _newsRepo.IncrementLikeCountAsync(id);

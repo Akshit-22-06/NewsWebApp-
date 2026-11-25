@@ -70,9 +70,24 @@ namespace NewsWebApp.Models
         [Display(Name = "Moderation Status")]
         public string Status { get; set; } = ArticleStatus.Pending;
 
-        [StringLength(500)]
+        [StringLength(1000)]
         [Display(Name = "Rejection Reason")]
         public string? RejectionReason { get; set; }
+
+        [Display(Name = "AI Quality Score")]
+        [Range(0, 100)]
+        public int? ModerationQualityScore { get; set; }
+
+        [StringLength(500)]
+        [Display(Name = "Moderation Categories")]
+        public string? ModerationCategories { get; set; }
+
+        [StringLength(100)]
+        [Display(Name = "AI Model Version")]
+        public string? ModerationModel { get; set; }
+
+        [Display(Name = "Moderated Date")]
+        public DateTime? ModeratedAt { get; set; }
 
         // Foreign Key & Navigation for Category
         [Required(ErrorMessage = "Please select a category.")]
@@ -95,6 +110,9 @@ namespace NewsWebApp.Models
 
         // Navigation property for Bookmarks
         public virtual ICollection<ArticleBookmark> Bookmarks { get; set; } = new List<ArticleBookmark>();
+
+        // Navigation property for timestamped views (Trending calculations)
+        public virtual ICollection<ArticleView> Views { get; set; } = new List<ArticleView>();
     }
 
     /// <summary>

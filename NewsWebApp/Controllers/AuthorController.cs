@@ -9,6 +9,7 @@ using NewsWebApp.Models;
 using NewsWebApp.Repositories.Interfaces;
 using NewsWebApp.Utils;
 using NewsWebApp.ViewModels;
+using NewsWebApp.Services;
 
 namespace NewsWebApp.Controllers
 {
@@ -21,17 +22,20 @@ namespace NewsWebApp.Controllers
         private readonly INewsRepository _newsRepository;
         private readonly ICategoryRepository _categoryRepository;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IGeminiModerationService _geminiModerationService;
 
         public AuthorController(
             IAuthorRepository authorRepository,
             INewsRepository newsRepository,
             ICategoryRepository categoryRepository,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            IGeminiModerationService geminiModerationService)
         {
             _authorRepository = authorRepository;
             _newsRepository = newsRepository;
             _categoryRepository = categoryRepository;
             _userManager = userManager;
+            _geminiModerationService = geminiModerationService;
         }
 
         // ==========================================
@@ -100,11 +104,25 @@ namespace NewsWebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CreateAuthorArticleViewModel model)
         {
+            // 1. Validate form fields
             if (!ModelState.IsValid)
             {
                 var categories = await _categoryRepository.GetAllAsync();
                 model.Categories = categories.Select(c => new SelectListItem(c.Name, c.Id.ToString()));
                 return View(model);
+            }
+
+            // 2. Automated Gemini AI moderation check
+            var moderation = await _geminiModerationService.ModerateArticleAsync(
+                model.Title, model.Summary, model.Content);
+
+            // 3. Fail-safe on service outage (Never auto-publish without review)
+            if (!moderation.IsSuccess)
+            {
+                ModelState.AddModelError(string.Empty, "We could not review your article right now. Please try again later.");
+                var categories = await _categoryRepository.GetAllAsync();
+                model.Categories = categories.Select(c => new SelectListItem(c.Name, c.Id.ToString()));
+                return View(model); // Preserves author's entered content!
             }
 
             var userId = _userManager.GetUserId(User)!;
@@ -114,28 +132,63 @@ namespace NewsWebApp.Controllers
                 model.Title,
                 s => _newsRepository.SlugExistsAsync(s));
 
-            // Newly created Author articles always start as Pending review, NOT published
-            var article = new NewsArticle
+            if (moderation.Decision == "APPROVE")
             {
-                Title = model.Title.Trim(),
-                Slug = slug,
-                Summary = model.Summary.Trim(),
-                Content = model.Content.Trim(),
-                ImageUrl = model.ImageUrl?.Trim(),
-                CategoryId = model.CategoryId,
-                AuthorId = author.Id,
-                Status = ArticleStatus.Pending,
-                IsPublished = false,
-                IsFeatured = false,
-                RejectionReason = null,
-                CreatedAt = DateTime.UtcNow,
-                PublishedDate = null
-            };
+                // Case A: Article approved by Gemini -> Automatically approve and publish immediately
+                var article = new NewsArticle
+                {
+                    Title = model.Title.Trim(),
+                    Slug = slug,
+                    Summary = model.Summary.Trim(),
+                    Content = model.Content.Trim(),
+                    ImageUrl = model.ImageUrl?.Trim(),
+                    CategoryId = model.CategoryId,
+                    AuthorId = author.Id,
+                    Status = ArticleStatus.Approved,
+                    IsPublished = true,
+                    IsFeatured = false,
+                    PublishedDate = DateTime.UtcNow,
+                    CreatedAt = DateTime.UtcNow,
+                    RejectionReason = null,
+                    ModerationQualityScore = moderation.QualityScore,
+                    ModerationCategories = string.Join(", ", moderation.Categories),
+                    ModerationModel = moderation.ModelVersion,
+                    ModeratedAt = moderation.ModeratedAt
+                };
 
-            await _newsRepository.AddAsync(article);
+                await _newsRepository.AddAsync(article);
 
-            TempData["SuccessMessage"] = "Your article has been submitted for review! An administrator will review and approve it before it becomes publicly visible.";
-            return RedirectToAction(nameof(Dashboard));
+                TempData["SuccessMessage"] = "Your article has passed our AI content review and has been approved successfully. It is now published.";
+                return RedirectToAction(nameof(Dashboard));
+            }
+            else
+            {
+                // Case B: Article rejected by Gemini -> Do NOT publish, do NOT show in public articles
+                var article = new NewsArticle
+                {
+                    Title = model.Title.Trim(),
+                    Slug = slug,
+                    Summary = model.Summary.Trim(),
+                    Content = model.Content.Trim(),
+                    ImageUrl = model.ImageUrl?.Trim(),
+                    CategoryId = model.CategoryId,
+                    AuthorId = author.Id,
+                    Status = ArticleStatus.Rejected,
+                    IsPublished = false,
+                    PublishedDate = null,
+                    RejectionReason = moderation.AuthorMessage,
+                    CreatedAt = DateTime.UtcNow,
+                    ModerationQualityScore = moderation.QualityScore,
+                    ModerationCategories = string.Join(", ", moderation.Categories),
+                    ModerationModel = moderation.ModelVersion,
+                    ModeratedAt = moderation.ModeratedAt
+                };
+
+                await _newsRepository.AddAsync(article);
+
+                TempData["ErrorMessage"] = $"Your article could not be approved: {moderation.AuthorMessage}";
+                return RedirectToAction(nameof(Dashboard));
+            }
         }
 
         // GET: /author/edit/5
@@ -193,20 +246,53 @@ namespace NewsWebApp.Controllers
                 return Forbid();
             }
 
-            // Update content and reset status to Pending for review
+            // Automated Gemini AI moderation check for edited content
+            var moderation = await _geminiModerationService.ModerateArticleAsync(
+                model.Title, model.Summary, model.Content);
+
+            if (!moderation.IsSuccess)
+            {
+                ModelState.AddModelError(string.Empty, "We could not review your article right now. Please try again later.");
+                var categories = await _categoryRepository.GetAllAsync();
+                model.Categories = categories.Select(c => new SelectListItem(c.Name, c.Id.ToString(), c.Id == model.CategoryId));
+                return View(model);
+            }
+
+            // Update content and quality metadata
             article.Title = model.Title.Trim();
             article.Summary = model.Summary.Trim();
             article.Content = model.Content.Trim();
             article.ImageUrl = model.ImageUrl?.Trim();
             article.CategoryId = model.CategoryId;
-            article.Status = ArticleStatus.Pending;
-            article.RejectionReason = null;
-            article.IsPublished = false;
+            article.UpdatedDate = DateTime.UtcNow;
+            article.ModerationQualityScore = moderation.QualityScore;
+            article.ModerationCategories = string.Join(", ", moderation.Categories);
+            article.ModerationModel = moderation.ModelVersion;
+            article.ModeratedAt = moderation.ModeratedAt;
 
-            await _newsRepository.UpdateAsync(article);
+            if (moderation.Decision == "APPROVE")
+            {
+                article.Status = ArticleStatus.Approved;
+                article.IsPublished = true;
+                article.PublishedDate = DateTime.UtcNow;
+                article.RejectionReason = null;
 
-            TempData["SuccessMessage"] = "Article updated and resubmitted for admin review.";
-            return RedirectToAction(nameof(Dashboard));
+                await _newsRepository.UpdateAsync(article);
+
+                TempData["SuccessMessage"] = "Your updated article has passed our AI content review and has been published successfully.";
+                return RedirectToAction(nameof(Dashboard));
+            }
+            else
+            {
+                article.Status = ArticleStatus.Rejected;
+                article.IsPublished = false;
+                article.RejectionReason = moderation.AuthorMessage;
+
+                await _newsRepository.UpdateAsync(article);
+
+                TempData["ErrorMessage"] = $"Your updated article could not be approved: {moderation.AuthorMessage}";
+                return RedirectToAction(nameof(Dashboard));
+            }
         }
 
         // POST: /author/delete/5

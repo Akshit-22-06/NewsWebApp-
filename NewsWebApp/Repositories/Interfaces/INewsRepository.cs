@@ -15,6 +15,7 @@ namespace NewsWebApp.Repositories.Interfaces
         Task<IEnumerable<NewsArticle>> GetLatestAsync(int count);
         Task<IEnumerable<NewsArticle>> GetFeaturedAsync(int count);
         Task<IEnumerable<NewsArticle>> GetPopularAsync(int count);
+        Task<IEnumerable<ViewModels.TrendingArticleDto>> GetTrendingTodayAsync(int count = 5);
         Task<IEnumerable<NewsArticle>> GetRelatedAsync(int articleId, int categoryId, int count);
 
         Task<(IEnumerable<NewsArticle> Articles, int TotalCount)> GetPagedAdminAsync(
@@ -28,7 +29,7 @@ namespace NewsWebApp.Repositories.Interfaces
         Task UpdateAsync(NewsArticle article);
         Task DeleteAsync(int id);
         
-        Task IncrementViewCountAsync(int id);
+        Task IncrementViewCountAsync(int id, string? viewerHash = null);
         Task IncrementLikeCountAsync(int id);
         Task<bool> SlugExistsAsync(string slug, int? excludeId = null);
 

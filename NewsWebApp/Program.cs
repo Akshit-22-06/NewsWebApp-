@@ -91,6 +91,8 @@ builder.Services.AddScoped<IAuthorRepository, AuthorRepository>();
 builder.Services.AddScoped<IBookmarkRepository, BookmarkRepository>();
 builder.Services.AddScoped<INewsletterRepository, NewsletterRepository>();
 
+builder.Services.AddMemoryCache();
+
 // Currents News API Service Registration (Single External News Source)
 builder.Services.AddHttpClient<INewsService, NewsService>(client =>
 {
@@ -99,6 +101,36 @@ builder.Services.AddHttpClient<INewsService, NewsService>(client =>
     client.DefaultRequestHeaders.UserAgent.ParseAdd("NewsWebApp/1.0");
     client.Timeout = TimeSpan.FromSeconds(15);
 });
+
+// Google Gemini AI Article Moderation Service Registration
+builder.Services.Configure<GeminiModerationOptions>(builder.Configuration.GetSection(GeminiModerationOptions.SectionName));
+builder.Services.AddHttpClient<IGeminiModerationService, GeminiModerationService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
+// The Morning Dispatch: Automated Newsletter Delivery & Curation Services
+builder.Services.AddHttpClient<IEmailService, EmailService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(25);
+}).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+{
+    ConnectCallback = async (context, cancellationToken) =>
+    {
+        var entry = await System.Net.Dns.GetHostEntryAsync(context.DnsEndPoint.Host, System.Net.Sockets.AddressFamily.InterNetwork, cancellationToken);
+        var ip = entry.AddressList.FirstOrDefault() ?? throw new System.Net.Sockets.SocketException((int)System.Net.Sockets.SocketError.HostNotFound);
+        var socket = new System.Net.Sockets.Socket(System.Net.Sockets.AddressFamily.InterNetwork, System.Net.Sockets.SocketType.Stream, System.Net.Sockets.ProtocolType.Tcp);
+        await socket.ConnectAsync(ip, context.DnsEndPoint.Port, cancellationToken);
+        return new System.Net.Sockets.NetworkStream(socket, ownsSocket: true);
+    }
+});
+builder.Services.AddHttpClient<INewsletterCurationService, NewsletterCurationService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(60);
+});
+builder.Services.AddSingleton<DailyNewsletterSchedulerService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<DailyNewsletterSchedulerService>());
+builder.Services.AddSingleton<INewsletterSchedulerManager>(sp => sp.GetRequiredService<DailyNewsletterSchedulerService>());
 
 // ==========================================
 // 4. MVC & Routing Configuration

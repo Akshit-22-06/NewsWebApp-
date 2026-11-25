@@ -21,6 +21,9 @@ namespace NewsWebApp.Data
         public DbSet<Comment> Comments { get; set; } = null!;
         public DbSet<ArticleBookmark> ArticleBookmarks { get; set; } = null!;
         public DbSet<NewsletterSubscriber> NewsletterSubscribers { get; set; } = null!;
+        public DbSet<NewsletterEdition> NewsletterEditions { get; set; } = null!;
+        public DbSet<NewsletterSetting> NewsletterSettings { get; set; } = null!;
+        public DbSet<ArticleView> ArticleViews { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -141,7 +144,46 @@ namespace NewsWebApp.Data
             {
                 entity.HasKey(s => s.Id);
                 entity.Property(s => s.Email).IsRequired().HasMaxLength(256);
+                entity.Property(s => s.UnsubscribeToken).IsRequired().HasMaxLength(64);
                 entity.HasIndex(s => s.Email).IsUnique();
+                entity.HasIndex(s => s.UnsubscribeToken).IsUnique();
+            });
+
+            // ==========================================
+            // NewsletterEdition Configuration
+            // ==========================================
+            builder.Entity<NewsletterEdition>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.EditionDate).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.Subject).IsRequired().HasMaxLength(250);
+                entity.Property(e => e.Status).IsRequired().HasMaxLength(30);
+                entity.HasIndex(e => e.EditionDate).IsUnique();
+            });
+
+            // ==========================================
+            // NewsletterSetting Configuration
+            // ==========================================
+            builder.Entity<NewsletterSetting>(entity =>
+            {
+                entity.HasKey(s => s.Id);
+            });
+
+            // ==========================================
+            // ArticleView Configuration (Trending Tracking)
+            // ==========================================
+            builder.Entity<ArticleView>(entity =>
+            {
+                entity.HasKey(v => v.Id);
+                entity.Property(v => v.ViewerHash).HasMaxLength(32);
+                entity.HasIndex(v => v.ViewedAt);
+                entity.HasIndex(v => new { v.NewsArticleId, v.ViewedAt });
+                entity.HasIndex(v => new { v.NewsArticleId, v.ViewerHash, v.ViewedAt });
+
+                entity.HasOne(v => v.NewsArticle)
+                      .WithMany(a => a.Views)
+                      .HasForeignKey(v => v.NewsArticleId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

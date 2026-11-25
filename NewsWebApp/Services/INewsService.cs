@@ -13,5 +13,6 @@ namespace NewsWebApp.Services
         Task<List<NewsDto>> GetLatestNewsAsync(string? category = null, string? country = null, string? language = null);
         Task<List<NewsDto>> SearchNewsAsync(string query, string? category = null, string? country = null, string? language = null);
         Task<List<NewsDto>> GetNewsByCategoryAsync(string category);
+        Task<List<NewsWebApp.ViewModels.TrendingArticleDto>> GetTrendingNewsTodayAsync(int count = 5);
     }
 }

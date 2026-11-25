@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using NewsWebApp.Models;
 using NewsWebApp.Repositories.Interfaces;
+using NewsWebApp.Services;
 using NewsWebApp.ViewModels;
 
 namespace NewsWebApp.Controllers
@@ -16,15 +17,18 @@ namespace NewsWebApp.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IAuthorRepository _authorRepository;
+        private readonly INewsletterSchedulerManager _schedulerManager;
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            IAuthorRepository authorRepository)
+            IAuthorRepository authorRepository,
+            INewsletterSchedulerManager schedulerManager)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _authorRepository = authorRepository;
+            _schedulerManager = schedulerManager;
         }
 
         // GET: /account/register
@@ -86,6 +90,17 @@ namespace NewsWebApp.Controllers
                         Bio = "Contributor at NewsBase"
                     };
                     await _authorRepository.AddAsync(author);
+                }
+
+                // Auto-subscribe new user to The Morning Dispatch and send welcome email
+                try
+                {
+                    var baseUrl = $"{Request.Scheme}://{Request.Host}";
+                    await _schedulerManager.SubscribeAndSendWelcomeAsync(user.Email, baseUrl);
+                }
+                catch
+                {
+                    // Non-blocking for registration flow
                 }
 
                 await _signInManager.SignInAsync(user, isPersistent: false);

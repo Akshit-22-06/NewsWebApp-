@@ -1,0 +1,90 @@
+@{
+    ViewData["Title"] = "Newsletter Preferences";
+    bool success = ViewBag.Success == true;
+    string message = ViewBag.Message as string ?? "Your subscription preferences have been updated.";
+    var subscriber = ViewBag.Subscriber as NewsWebApp.Models.NewsletterSubscriber;
+    string token = ViewBag.Token as string ?? "";
+}
+
+<div class="row justify-content-center py-5">
+    <div class="col-md-7 col-lg-6">
+        <div class="card card-editorial p-4 p-md-5">
+            <div class="text-center mb-4 pb-3 border-bottom">
+                <span class="editorial-kicker">NewsBase &bull; Editorial Circulation</span>
+                <h1 class="editorial-headline h3 mt-1 mb-2">The Morning Dispatch</h1>
+                <p class="text-muted small mb-0">Subscription Preferences & Delivery Settings</p>
+            </div>
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success d-flex align-items-center mb-4" role="alert">
+                    <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                    <div>@TempData["SuccessMessage"]</div>
+                </div>
+            }
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                    <div>@TempData["ErrorMessage"]</div>
+                </div>
+            }
+
+            @if (success)
+            {
+                <div class="text-center py-3">
+                    <div class="mb-3">
+                        <i class="bi bi-envelope-check text-muted" style="font-size: 3rem;"></i>
+                    </div>
+                    <h2 class="h5 fw-bold text-dark mb-2">Subscription Updated</h2>
+                    <p class="text-muted mb-4">
+                        @message
+                    </p>
+
+                    @if (subscriber != null)
+                    {
+                        <div class="p-3 bg-light rounded border text-muted small mb-4">
+                            Subscriber: <strong>@subscriber.Email</strong><br />
+                            Status: <span class="badge @(subscriber.IsActive ? "bg-success" : "bg-secondary")">@(subscriber.IsActive ? "Active" : "Unsubscribed")</span>
+                        </div>
+                    }
+
+                    @if (subscriber != null && !subscriber.IsActive)
+                    {
+                        <form asp-controller="Newsletter" asp-action="Resubscribe" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="token" value="@token" />
+                            <button type="submit" class="btn btn-editorial-primary btn-sm me-2">
+                                <i class="bi bi-arrow-clockwise me-1"></i> Resubscribe to The Morning Dispatch
+                            </button>
+                        </form>
+                    }
+
+                    <a asp-controller="Home" asp-action="Index" class="btn btn-editorial-outline btn-sm">
+                        Return to Homepage
+                    </a>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-3">
+                    <div class="mb-3">
+                        <i class="bi bi-exclamation-circle text-danger" style="font-size: 3rem;"></i>
+                    </div>
+                    <h2 class="h5 fw-bold text-dark mb-2">Invalid Request</h2>
+                    <p class="text-muted mb-4">@message</p>
+                    <a asp-controller="Home" asp-action="Index" class="btn btn-editorial-primary btn-sm">
+                        Return to NewsBase
+                    </a>
+                </div>
+            }
+
+            <div class="border-top pt-3 mt-4 text-center">
+                <small class="text-muted" style="font-size: 0.75rem;">
+                    NewsBase respects reader privacy. We never share subscriber records with third parties.
+                </small>
+            </div>
+        </div>
+    </div>
+</div>

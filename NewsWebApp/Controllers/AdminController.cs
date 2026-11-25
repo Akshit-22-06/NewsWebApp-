@@ -30,6 +30,7 @@ namespace NewsWebApp.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly INewsService _newsService;
         private readonly IConfiguration _configuration;
+        private readonly INewsletterSchedulerManager _schedulerManager;
 
         public AdminController(
             INewsRepository newsRepo,
@@ -39,7 +40,8 @@ namespace NewsWebApp.Controllers
             INewsletterRepository newsletterRepo,
             UserManager<ApplicationUser> userManager,
             INewsService newsService,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            INewsletterSchedulerManager schedulerManager)
         {
             _newsRepo = newsRepo;
             _categoryRepo = categoryRepo;
@@ -49,6 +51,7 @@ namespace NewsWebApp.Controllers
             _userManager = userManager;
             _newsService = newsService;
             _configuration = configuration;
+            _schedulerManager = schedulerManager;
         }
 
         // ==========================================
@@ -383,15 +386,163 @@ namespace NewsWebApp.Controllers
             return View(list);
         }
 
-        public async Task<IActionResult> Subscribers() => View(await _newsletterRepo.GetAllSubscribersAsync());
+        // ==========================================
+        // 4B. NEWSLETTER: THE MORNING DISPATCH
+        // ==========================================
+        public async Task<IActionResult> Subscribers(string? search, string? tab)
+        {
+            var subscribers = await _newsletterRepo.GetAllSubscribersAsync(search);
+            var editions = await _newsletterRepo.GetAllEditionsAsync(20);
+            var settings = await _newsletterRepo.GetSettingsAsync();
+            var schedulerStatus = _schedulerManager.GetStatus();
+            var quotaInfo = await _schedulerManager.GetEmailQuotaAsync();
+
+            var viewModel = new AdminNewsletterViewModel
+            {
+                ActiveSubscribersCount = await _newsletterRepo.GetActiveSubscriberCountAsync(),
+                UnsubscribedCount = await _newsletterRepo.GetUnsubscribedCountAsync(),
+                TotalSubscribersCount = subscribers.Count(),
+                Subscribers = subscribers,
+                Editions = editions,
+                SchedulerStatus = schedulerStatus,
+                Settings = settings,
+                QuotaInfo = quotaInfo,
+                SearchQuery = search,
+                ActiveTab = string.Equals(tab, "subscribers", StringComparison.OrdinalIgnoreCase) ? "subscribers" : "dispatch"
+            };
+
+            return View(viewModel);
+        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteSubscriber(int id)
+        public async Task<IActionResult> ToggleSubscriber(int id, string? tab)
+        {
+            await _newsletterRepo.ToggleStatusAsync(id);
+            TempData["SuccessMessage"] = "Subscriber status updated.";
+            return RedirectToAction(nameof(Subscribers), new { tab = tab ?? "subscribers" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteSubscriber(int id, string? tab)
         {
             await _newsletterRepo.DeleteAsync(id);
-            TempData["SuccessMessage"] = "Subscriber removed.";
-            return RedirectToAction(nameof(Subscribers));
+            TempData["SuccessMessage"] = "Subscriber removed from database.";
+            return RedirectToAction(nameof(Subscribers), new { tab = tab ?? "subscribers" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GenerateNewsletter(string? editionDate)
+        {
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var (success, message, edition) = await _schedulerManager.GenerateEditionAsync(editionDate, baseUrl);
+
+            if (success)
+            {
+                TempData["SuccessMessage"] = message;
+            }
+            else
+            {
+                TempData["ErrorMessage"] = message;
+            }
+
+            return RedirectToAction(nameof(Subscribers), new { tab = "dispatch" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SendNewsletter(int id)
+        {
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var (success, message) = await _schedulerManager.SendEditionAsync(id, baseUrl);
+
+            if (success)
+            {
+                TempData["SuccessMessage"] = message;
+            }
+            else
+            {
+                TempData["ErrorMessage"] = message;
+            }
+
+            return RedirectToAction(nameof(Subscribers), new { tab = "dispatch" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SendTestNewsletter(int id, string testEmail)
+        {
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var (success, message) = await _schedulerManager.SendTestEmailAsync(id, testEmail, baseUrl);
+
+            if (success)
+            {
+                TempData["SuccessMessage"] = message;
+            }
+            else
+            {
+                TempData["ErrorMessage"] = message;
+            }
+
+            return RedirectToAction(nameof(Subscribers), new { tab = "dispatch" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateNewsletterSettings(
+            bool isAutoSendEnabled, 
+            int sendHour, 
+            int sendMinute, 
+            string senderName, 
+            string senderEmail, 
+            string? adminTestEmail,
+            int? dailyEmailQuota)
+        {
+            var settings = await _newsletterRepo.GetSettingsAsync();
+            settings.IsAutoSendEnabled = isAutoSendEnabled;
+            settings.SendHour = Math.Clamp(sendHour, 0, 23);
+            settings.SendMinute = Math.Clamp(sendMinute, 0, 59);
+            settings.SenderName = string.IsNullOrWhiteSpace(senderName) ? "The Morning Dispatch | NewsBase" : senderName.Trim();
+            settings.SenderEmail = string.IsNullOrWhiteSpace(senderEmail) ? "newsletter@newsbase.org" : senderEmail.Trim();
+            settings.AdminTestEmail = adminTestEmail?.Trim();
+            settings.DailyEmailQuota = (dailyEmailQuota.HasValue && dailyEmailQuota.Value > 0) ? dailyEmailQuota.Value : 300;
+
+            await _newsletterRepo.UpdateSettingsAsync(settings);
+            TempData["SuccessMessage"] = "Newsletter delivery schedule and Brevo quota settings updated.";
+            return RedirectToAction(nameof(Subscribers), new { tab = "dispatch" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResumeQueuedDispatch(int id)
+        {
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var (success, message) = await _schedulerManager.SendEditionAsync(id, baseUrl);
+
+            if (success)
+            {
+                TempData["SuccessMessage"] = message;
+            }
+            else
+            {
+                TempData["ErrorMessage"] = message;
+            }
+
+            return RedirectToAction(nameof(Subscribers), new { tab = "dispatch" });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> NewsletterEditionPreview(int id)
+        {
+            var edition = await _newsletterRepo.GetEditionByIdAsync(id);
+            if (edition == null)
+            {
+                return NotFound("Newsletter edition not found.");
+            }
+
+            return Content(edition.HtmlContent, "text/html");
         }
 
         // ==========================================
@@ -430,6 +581,50 @@ namespace NewsWebApp.Controllers
             }
 
             return View(model);
+        }
+
+        // ==========================================
+        // 6. AI MODERATION AUDIT & HISTORY
+        // ==========================================
+        public async Task<IActionResult> AiModeration(string? status, int page = 1)
+        {
+            const int pageSize = 15;
+            var (articles, totalCount) = await _newsRepo.GetPagedAdminAsync(
+                search: null,
+                categoryId: null,
+                isPublished: null,
+                page: page,
+                pageSize: pageSize,
+                status: status);
+
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = Math.Max(1, (int)Math.Ceiling((double)totalCount / pageSize));
+            ViewBag.TotalCount = totalCount;
+            ViewBag.SelectedStatus = status;
+
+            return View(articles);
+        }
+
+        // ==========================================
+        // 7. SYSTEM & APPLICATION SETTINGS
+        // ==========================================
+        public IActionResult Settings()
+        {
+            var geminiModel = _configuration["Gemini:Model"] ?? "gemini-3.5-flash-lite";
+            var timeout = _configuration["Gemini:TimeoutSeconds"] ?? "45";
+            var minScore = _configuration["Gemini:MinimumQualityScore"] ?? "50";
+            var hasGeminiKey = !string.IsNullOrWhiteSpace(_configuration["Gemini:ApiKey"]);
+            var hasCurrentsKey = !string.IsNullOrWhiteSpace(_configuration["CurrentsApi:ApiKey"]);
+            var dbProvider = _configuration["DatabaseProvider"] ?? "Sqlite";
+
+            ViewBag.GeminiModel = geminiModel;
+            ViewBag.GeminiTimeout = timeout;
+            ViewBag.GeminiMinScore = minScore;
+            ViewBag.HasGeminiKey = hasGeminiKey;
+            ViewBag.HasCurrentsKey = hasCurrentsKey;
+            ViewBag.DatabaseProvider = dbProvider;
+
+            return View();
         }
 
         // ==========================================

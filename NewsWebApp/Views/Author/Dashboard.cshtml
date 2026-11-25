@@ -18,29 +18,29 @@
 <!-- Status Summary Cards -->
 <div class="row g-3 mb-4">
     <div class="col-md-4">
-        <div class="card border-warning shadow-sm">
+        <div class="card card-editorial shadow-sm">
             <div class="card-body">
-                <span class="text-muted small text-uppercase fw-semibold">Pending Review</span>
-                <div class="h3 text-warning mb-0 mt-1">@Model.PendingCount</div>
-                <small class="text-muted">Awaiting administrator approval</small>
+                <span class="text-muted small text-uppercase fw-semibold" style="letter-spacing: 0.05em;">Pending Review</span>
+                <div class="h3 text-warning mb-0 mt-1 font-serif">@Model.PendingCount</div>
+                <small class="text-muted">Awaiting AI editorial review</small>
             </div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card border-success shadow-sm">
+        <div class="card card-editorial shadow-sm">
             <div class="card-body">
-                <span class="text-muted small text-uppercase fw-semibold">Approved &amp; Live</span>
-                <div class="h3 text-success mb-0 mt-1">@Model.ApprovedCount</div>
-                <small class="text-muted">Visible on public NewsBase</small>
+                <span class="text-muted small text-uppercase fw-semibold" style="letter-spacing: 0.05em;">Approved &amp; Live</span>
+                <div class="h3 text-success mb-0 mt-1 font-serif">@Model.ApprovedCount</div>
+                <small class="text-muted">Passed AI review &amp; live on NewsBase</small>
             </div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card border-danger shadow-sm">
+        <div class="card card-editorial shadow-sm">
             <div class="card-body">
-                <span class="text-muted small text-uppercase fw-semibold">Rejected</span>
-                <div class="h3 text-danger mb-0 mt-1">@Model.RejectedCount</div>
-                <small class="text-muted">Needs revisions before re-review</small>
+                <span class="text-muted small text-uppercase fw-semibold" style="letter-spacing: 0.05em;">Needs Revision</span>
+                <div class="h3 text-danger mb-0 mt-1 font-serif">@Model.RejectedCount</div>
+                <small class="text-muted">Needs revisions before AI re-review</small>
             </div>
         </div>
     </div>
@@ -107,15 +107,23 @@
                         <td>
                             @if (article.Status == NewsWebApp.Models.ArticleStatus.Approved)
                             {
-                                <span class="badge bg-success">Approved</span>
+                                <span class="badge bg-success">Approved (AI)</span>
                             }
                             else if (article.Status == NewsWebApp.Models.ArticleStatus.Rejected)
                             {
-                                <span class="badge bg-danger">Rejected</span>
+                                <span class="badge bg-danger">Rejected (AI)</span>
                             }
                             else
                             {
                                 <span class="badge bg-warning text-dark">Pending</span>
+                            }
+                            @if (article.ModerationQualityScore.HasValue)
+                            {
+                                <div class="mt-1">
+                                    <span class="badge bg-light text-dark border small" title="Quality score evaluated by Gemini AI">
+                                        Score: @article.ModerationQualityScore/100
+                                    </span>
+                                </div>
                             }
                         </td>
                         <td class="text-muted small">

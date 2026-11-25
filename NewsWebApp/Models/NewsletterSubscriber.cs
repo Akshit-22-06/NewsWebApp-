@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 namespace NewsWebApp.Models
 {
     /// <summary>
-    /// Represents a subscriber to the daily news briefing newsletter.
+    /// Represents a subscriber to The Morning Dispatch daily news briefing newsletter.
     /// </summary>
     public class NewsletterSubscriber
     {
@@ -19,5 +19,14 @@ namespace NewsWebApp.Models
         public DateTime SubscribedAt { get; set; } = DateTime.UtcNow;
 
         public bool IsActive { get; set; } = true;
+
+        [StringLength(64)]
+        public string UnsubscribeToken { get; set; } = Guid.NewGuid().ToString("N");
+
+        public DateTime? UnsubscribedAt { get; set; }
+
+        public int? LastDeliveredEditionId { get; set; }
+
+        public DateTime? LastDeliveredAt { get; set; }
     }
 }

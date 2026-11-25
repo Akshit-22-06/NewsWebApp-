@@ -1,89 +1,81 @@
 @model NewsWebApp.Models.Author
 @{
-    ViewData["Title"] = $"Details - {Model.DisplayName}";
+    ViewData["Title"] = $"{Model.DisplayName} - NewsBase Journalist";
 }
 
-<h1>Details</h1>
+<div class="container" style="max-width: 960px;">
+    <!-- Author Profile Header -->
+    <div class="card card-editorial p-4 mb-5 bg-light">
+        <div class="row align-items-center g-4">
+            <div class="col-md-auto text-center">
+                <img src="@(string.IsNullOrEmpty(Model.ProfileImageUrl) ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80" : Model.ProfileImageUrl)"
+                     alt="@Model.DisplayName"
+                     class="rounded-circle border shadow-sm" style="width: 110px; height: 110px; object-fit: cover;" />
+            </div>
+            <div class="col-md">
+                <span class="badge bg-secondary mb-2">Staff Correspondent</span>
+                <h1 class="editorial-headline h2 mb-2">@Model.DisplayName</h1>
+                <p class="text-muted mb-3" style="font-size: 1.05rem;">
+                    @(Model.Bio ?? "Investigative reporter and analytical contributor covering developments across politics, enterprise technology, and public affairs for NewsBase.")
+                </p>
+                <div class="d-flex flex-wrap gap-3 small text-muted">
+                    <span><i class="bi bi-newspaper me-1"></i><strong>@Model.NewsArticles.Count</strong> Published Dispatches</span>
+                    @if (Model.User != null)
+                    {
+                        <span><i class="bi bi-envelope me-1"></i>@Model.User.Email</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
 
-<div>
-    <h4>Author</h4>
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-2">
-            Avatar
-        </dt>
-        <dd class="col-sm-10">
-            <img src="@(string.IsNullOrEmpty(Model.ProfileImageUrl) ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" : Model.ProfileImageUrl)"
-                 alt="@Model.DisplayName"
-                 class="rounded-circle" style="width: 80px; height: 80px; object-fit: cover;" />
-        </dd>
-        <dt class="col-sm-2">
-            Name
-        </dt>
-        <dd class="col-sm-10">
-            @Model.DisplayName
-        </dd>
-        <dt class="col-sm-2">
-            Bio
-        </dt>
-        <dd class="col-sm-10">
-            @(Model.Bio ?? "Senior staff correspondent.")
-        </dd>
-        <dt class="col-sm-2">
-            Articles Count
-        </dt>
-        <dd class="col-sm-10">
-            @Model.NewsArticles.Count
-        </dd>
-    </dl>
-</div>
+    <!-- Published Articles Portfolio -->
+    <div class="mb-4">
+        <h3 class="editorial-headline h4 mb-3 pb-2 border-bottom">
+            Published Articles by @Model.DisplayName
+        </h3>
 
-<div class="mt-4">
-    <h4>Articles by @Model.DisplayName</h4>
-    <hr />
-    @if (!Model.NewsArticles.Any())
-    {
-        <p class="text-muted">No published articles available by this author.</p>
-    }
-    else
-    {
-        <table class="table table-striped table-hover">
-            <thead>
-                <tr>
-                    <th>Title</th>
-                    <th>Category</th>
-                    <th>Published Date</th>
-                    <th>Views</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var article in Model.NewsArticles)
+        @if (!Model.NewsArticles.Any())
+        {
+            <div class="alert alert-light border py-4 text-center text-muted">
+                <p class="mb-0">No published articles available by this author yet.</p>
+            </div>
+        }
+        else
+        {
+            <div class="row g-4">
+                @foreach (var article in Model.NewsArticles.OrderByDescending(a => a.PublishedDate ?? a.CreatedAt))
                 {
-                    <tr>
-                        <td>
-                            <strong>@article.Title</strong>
-                            <div class="text-muted small">@article.Summary</div>
-                        </td>
-                        <td>
-                            <span class="badge bg-secondary">@article.Category?.Name</span>
-                        </td>
-                        <td>
-                            @(article.PublishedDate?.ToString("MMM dd, yyyy") ?? "Recent")
-                        </td>
-                        <td>
-                            @article.ViewCount
-                        </td>
-                        <td class="text-end">
-                            <a asp-controller="News" asp-action="Details" asp-route-slug="@article.Slug" class="btn btn-outline-primary btn-sm">Read</a>
-                        </td>
-                    </tr>
+                    <div class="col-md-6">
+                        <div class="card h-100 card-editorial p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-secondary small">@(article.Category?.Name ?? "General")</span>
+                                <span class="text-muted small"><i class="bi bi-eye me-1"></i>@article.ViewCount</span>
+                            </div>
+                            <h4 class="h5 font-serif mb-2">
+                                <a asp-controller="News" asp-action="Details" asp-route-slug="@article.Slug" class="text-dark text-decoration-none">
+                                    @article.Title
+                                </a>
+                            </h4>
+                            <p class="text-muted small flex-grow-1">
+                                @(article.Summary.Length > 110 ? article.Summary.Substring(0, 110) + "..." : article.Summary)
+                            </p>
+                            <div class="mt-auto pt-2 border-top d-flex justify-content-between align-items-center small text-muted">
+                                <span>@(article.PublishedDate?.ToString("MMM dd, yyyy") ?? "Recent")</span>
+                                <a asp-controller="News" asp-action="Details" asp-route-slug="@article.Slug" class="btn btn-sm btn-editorial-outline">
+                                    Read Article &rarr;
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 }
-            </tbody>
-        </table>
-    }
-</div>
+            </div>
+        }
+    </div>
 
-<div class="mt-3">
-    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+    <div class="mt-4 pt-3 border-top text-center">
+        <a asp-action="Index" class="btn btn-editorial-outline btn-sm">
+            &larr; View All Correspondents
+        </a>
+    </div>
 </div>

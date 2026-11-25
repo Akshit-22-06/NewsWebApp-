@@ -3,120 +3,239 @@
 @inject UserManager<ApplicationUser> UserManager
 
 @{
-    ViewData["Title"] = "Details";
     var article = Model.Article;
+    ViewData["Title"] = article.Title;
 }
 
-<h1>Details</h1>
+<article class="article-container mx-auto" style="max-width: 820px;">
+    <!-- Category & Section Eyebrow -->
+    <div class="mb-2">
+        <a asp-controller="News" asp-action="Category" asp-route-slug="@(article.Category?.Slug ?? "general")" class="badge bg-secondary text-uppercase text-decoration-none px-2 py-1" style="letter-spacing: 0.08em; font-size: 0.75rem;">
+            @(article.Category?.Name ?? "General News")
+        </a>
+        @if (article.Status == NewsWebApp.Models.ArticleStatus.Approved)
+        {
+            <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle ms-2" style="font-size: 0.75rem;">
+                <i class="bi bi-patch-check-fill me-1"></i>Verified Editorial
+            </span>
+        }
+    </div>
 
-<div>
-    <h4>NewsArticle</h4>
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-2">Title</dt>
-        <dd class="col-sm-10">@article.Title</dd>
+    <!-- Main Headline -->
+    <h1 class="editorial-title mb-3">@article.Title</h1>
 
-        <dt class="col-sm-2">Category</dt>
-        <dd class="col-sm-10">@article.Category?.Name</dd>
+    <!-- Standfirst / Lead Summary -->
+    @if (!string.IsNullOrWhiteSpace(article.Summary))
+    {
+        <div class="editorial-standfirst mb-4 pb-3 border-bottom">
+            @article.Summary
+        </div>
+    }
 
-        <dt class="col-sm-2">Author / Source</dt>
-        <dd class="col-sm-10">@(article.Author?.DisplayName ?? article.SourceName ?? "Staff")</dd>
+    <!-- Author Byline & Article Metadata -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 pb-3 border-bottom text-muted small">
+        <div class="d-flex align-items-center">
+            @if (!string.IsNullOrEmpty(article.Author?.ProfileImageUrl))
+            {
+                <img src="@article.Author.ProfileImageUrl" alt="@article.Author.DisplayName" class="rounded-circle me-2 border" style="width: 44px; height: 44px; object-fit: cover;" />
+            }
+            else
+            {
+                <div class="rounded-circle bg-dark text-white d-flex align-items-center justify-content-center me-2 fw-bold" style="width: 44px; height: 44px; font-size: 0.95rem;">
+                    @((article.Author?.DisplayName ?? article.SourceName ?? "S").Substring(0, 1).ToUpper())
+                </div>
+            }
+            <div>
+                <div class="fw-bold text-dark">
+                    @if (article.Author != null)
+                    {
+                        <a asp-controller="Author" asp-action="Details" asp-route-id="@article.Author.Id" class="text-decoration-none text-dark">
+                            @article.Author.DisplayName
+                        </a>
+                    }
+                    else
+                    {
+                        <span>@(article.SourceName ?? "Staff Correspondent")</span>
+                    }
+                </div>
+                <div class="text-muted" style="font-size: 0.8rem;">
+                    <span>@(article.PublishedDate?.ToString("MMMM dd, yyyy") ?? article.CreatedAt.ToString("MMMM dd, yyyy"))</span>
+                    <span class="mx-1">&bull;</span>
+                    <span><i class="bi bi-clock me-1"></i>@Model.EstimatedReadMinutes min read</span>
+                </div>
+            </div>
+        </div>
 
-        <dt class="col-sm-2">Published Date</dt>
-        <dd class="col-sm-10">@(article.PublishedDate?.ToString("yyyy-MM-dd HH:mm") ?? "Draft")</dd>
-
-        <dt class="col-sm-2">Summary</dt>
-        <dd class="col-sm-10">@article.Summary</dd>
-
-        <dt class="col-sm-2">Content</dt>
-        <dd class="col-sm-10" style="white-space: pre-line;">@article.Content</dd>
-
-        <dt class="col-sm-2">Engagement</dt>
-        <dd class="col-sm-10">
-            <span>@article.ViewCount views</span> |
-            <span>@article.LikeCount likes</span>
-            <form asp-action="Like" asp-route-id="@article.Id" method="post" class="d-inline ms-2">
-                <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
-                <button type="submit" class="btn btn-sm btn-outline-danger">Like</button>
+        <!-- Social & Engagement Actions -->
+        <div class="d-flex align-items-center gap-2">
+            <!-- Like Form -->
+            <form asp-action="Like" asp-route-id="@article.Id" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="slug" value="@article.Slug" />
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Like this story">
+                    <i class="bi bi-heart-fill me-1"></i>@article.LikeCount
+                </button>
             </form>
+
+            <!-- Bookmark Form -->
             @if (User.Identity?.IsAuthenticated == true)
             {
-                <form asp-action="ToggleBookmark" asp-route-id="@article.Id" method="post" class="d-inline ms-1">
+                <form asp-action="ToggleBookmark" asp-route-id="@article.Id" method="post" class="d-inline">
                     @Html.AntiForgeryToken()
-                    <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
-                    <button type="submit" class="btn btn-sm @(Model.IsBookmarked ? "btn-warning text-dark" : "btn-outline-secondary")">
-                        @(Model.IsBookmarked ? "Bookmarked (Remove)" : "Bookmark")
+                    <input type="hidden" name="slug" value="@article.Slug" />
+                    <button type="submit" class="btn btn-sm @(Model.IsBookmarked ? "btn-warning text-dark" : "btn-outline-secondary")" title="Save to reading list">
+                        <i class="bi @(Model.IsBookmarked ? "bi-bookmark-fill" : "bi-bookmark") me-1"></i>
+                        @(Model.IsBookmarked ? "Saved" : "Save")
                     </button>
                 </form>
             }
             else
             {
-                <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path" class="btn btn-sm btn-outline-secondary ms-1">
-                    Bookmark
+                <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-bookmark me-1"></i>Save
                 </a>
             }
-        </dd>
 
-        @if (!string.IsNullOrEmpty(article.SourceUrl))
-        {
-            <dt class="col-sm-2">Original Wire</dt>
-            <dd class="col-sm-10">
-                <a href="@article.SourceUrl" target="_blank" rel="noopener noreferrer">@article.SourceName &nearr;</a>
-            </dd>
-        }
-    </dl>
-</div>
-
-<div class="mb-4">
-    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
-</div>
-
-<h4>Comments (@article.Comments.Count)</h4>
-<hr />
-
-@if (User.Identity?.IsAuthenticated == true)
-{
-    <form asp-action="AddComment" method="post" class="mb-4">
-        @Html.AntiForgeryToken()
-        <input type="hidden" name="newsArticleId" value="@article.Id" />
-        <input type="hidden" name="articleSlug" value="@article.Slug" />
-        <div class="mb-3">
-            <label class="form-label">Leave a Comment</label>
-            <textarea name="content" class="form-control" rows="3" required></textarea>
+            <span class="badge bg-light text-muted border px-2 py-1 small">
+                <i class="bi bi-eye me-1"></i>@article.ViewCount
+            </span>
         </div>
-        <button type="submit" class="btn btn-primary">Post Comment</button>
-    </form>
-}
-else
-{
-    <p><a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path">Log in</a> to post a comment.</p>
-}
+    </div>
 
-@if (!article.Comments.Any())
-{
-    <p class="text-muted">No comments yet.</p>
-}
-else
-{
-    <ul class="list-group mb-4">
-        @foreach (var c in article.Comments)
-        {
-            <li class="list-group-item">
-                <div class="d-flex justify-content-between">
-                    <strong>@(c.User?.FullName ?? c.User?.UserName ?? "Reader")</strong>
-                    <small class="text-muted">@c.CreatedAt.ToString("yyyy-MM-dd HH:mm")</small>
-                </div>
-                <p class="mb-1">@c.Content</p>
-                @if (User.IsInRole("Admin") || c.UserId == UserManager.GetUserId(User))
+    <!-- Featured Image -->
+    @if (!string.IsNullOrWhiteSpace(article.ImageUrl))
+    {
+        <figure class="mb-4">
+            <img src="@article.ImageUrl" class="img-fluid rounded-1 w-100 border" alt="@article.Title" style="max-height: 480px; object-fit: cover;" onerror="this.style.display='none';" />
+            @if (!string.IsNullOrEmpty(article.SourceName))
+            {
+                <figcaption class="text-muted small mt-2 fst-italic">
+                    Photo source: @article.SourceName
+                </figcaption>
+            }
+        </figure>
+    }
+
+    <!-- Article Content -->
+    <div class="editorial-body mb-5">
+        @Html.Raw(Html.Encode(article.Content).Replace("\n\n", "</p><p>").Replace("\n", "<br/>"))
+    </div>
+
+    @if (!string.IsNullOrEmpty(article.SourceUrl))
+    {
+        <div class="alert alert-light border py-2 px-3 mb-5 small text-muted">
+            <i class="bi bi-link-45deg me-1"></i>Original dispatch published on
+            <a href="@article.SourceUrl" target="_blank" rel="noopener noreferrer" class="fw-bold text-decoration-none">
+                @(article.SourceName ?? "External Wire") <i class="bi bi-box-arrow-up-right small"></i>
+            </a>
+        </div>
+    }
+
+    <!-- Author Beat Bio Box -->
+    @if (article.Author != null)
+    {
+        <div class="card bg-light border p-3 mb-5 rounded-1">
+            <div class="d-flex align-items-center">
+                @if (!string.IsNullOrEmpty(article.Author.ProfileImageUrl))
                 {
-                    <form asp-action="DeleteComment" method="post" class="mt-1">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="id" value="@c.Id" />
-                        <input type="hidden" name="slug" value="@article.Slug" />
-                        <button type="submit" class="btn btn-sm btn-link text-danger p-0" onclick="return confirm('Delete this comment?');">Delete</button>
-                    </form>
+                    <img src="@article.Author.ProfileImageUrl" alt="@article.Author.DisplayName" class="rounded-circle me-3 border" style="width: 54px; height: 54px; object-fit: cover;" />
                 }
-            </li>
+                <div>
+                    <h6 class="mb-1 fw-bold">Written by @article.Author.DisplayName</h6>
+                    <p class="small text-muted mb-0">@(article.Author.Bio ?? "Staff correspondent and investigative contributor at NewsBase.")</p>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Related Articles Section -->
+    @if (Model.RelatedArticles != null && Model.RelatedArticles.Any())
+    {
+        <section class="mb-5 pt-3 border-top">
+            <h4 class="editorial-headline h5 mb-3">Related Stories</h4>
+            <div class="row g-3">
+                @foreach (var related in Model.RelatedArticles)
+                {
+                    <div class="col-md-4">
+                        <div class="card h-100 card-editorial p-3">
+                            <span class="badge bg-secondary mb-2 align-self-start" style="font-size: 0.675rem;">@(related.Category?.Name ?? "News")</span>
+                            <h6 class="card-title mb-2">
+                                <a asp-controller="News" asp-action="Details" asp-route-slug="@related.Slug" class="text-dark text-decoration-none font-serif">
+                                    @related.Title
+                                </a>
+                            </h6>
+                            <small class="text-muted mt-auto">@(related.PublishedDate?.ToString("MMM dd, yyyy") ?? "Recent")</small>
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+    }
+
+    <!-- Comments Section -->
+    <section class="comments-section pt-3 border-top mb-5">
+        <h4 class="editorial-headline h5 mb-3">Discussion &amp; Reader Comments (@article.Comments.Count)</h4>
+
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <form asp-action="AddComment" method="post" class="card card-editorial p-3 mb-4">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="newsArticleId" value="@article.Id" />
+                <input type="hidden" name="articleSlug" value="@article.Slug" />
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small text-muted">Contribute to the conversation as @(User.Identity.Name)</label>
+                    <textarea name="content" class="form-control" rows="3" placeholder="Share your analysis or respectful response..." required></textarea>
+                </div>
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-editorial-primary btn-sm px-3">Publish Comment</button>
+                </div>
+            </form>
         }
-    </ul>
-}
+        else
+        {
+            <div class="alert alert-light border py-3 px-3 mb-4 d-flex justify-content-between align-items-center">
+                <span class="text-muted small">Join the discussion by signing in to your reader account.</span>
+                <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path" class="btn btn-sm btn-editorial-outline">
+                    Sign In to Comment
+                </a>
+            </div>
+        }
+
+        @if (!article.Comments.Any())
+        {
+            <p class="text-muted small fst-italic">No reader comments yet. Be the first to share your perspective.</p>
+        }
+        else
+        {
+            <div class="list-group list-group-flush border rounded-1">
+                @foreach (var c in article.Comments)
+                {
+                    <div class="list-group-item p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold small text-dark">@(c.User?.FullName ?? c.User?.UserName ?? "Reader")</span>
+                            <small class="text-muted">@c.CreatedAt.ToString("MMM dd, yyyy HH:mm")</small>
+                        </div>
+                        <p class="mb-1 text-secondary" style="font-size: 0.95rem;">@c.Content</p>
+                        @if (User.IsInRole("Admin") || c.UserId == UserManager.GetUserId(User))
+                        {
+                            <form asp-action="DeleteComment" method="post" class="mt-1">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@c.Id" />
+                                <input type="hidden" name="slug" value="@article.Slug" />
+                                <button type="submit" class="btn btn-link text-danger p-0 small text-decoration-none" onclick="return confirm('Delete this comment?');">
+                                    <i class="bi bi-trash3 me-1"></i>Delete
+                                </button>
+                            </form>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    <div class="mb-5 text-center">
+        <a asp-controller="News" asp-action="Index" class="btn btn-editorial-outline btn-sm px-3">
+            &larr; Back to All Stories
+        </a>
+    </div>
+</article>

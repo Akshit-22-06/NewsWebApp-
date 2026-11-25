@@ -8,7 +8,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
             <div>
                 <h1 class="h2 mb-1">Edit Article</h1>
-                <p class="text-muted mb-0">Revise your article content and resubmit for administrator approval.</p>
+                <p class="text-muted mb-0">Revise your article content and resubmit for Gemini AI automated editorial review.</p>
             </div>
             <div>
                 <a asp-controller="Author" asp-action="Dashboard" class="btn btn-outline-secondary">
@@ -20,10 +20,13 @@
         @if (Model.Status == NewsWebApp.Models.ArticleStatus.Rejected && !string.IsNullOrWhiteSpace(Model.RejectionReason))
         {
             <div class="alert alert-danger mb-4 shadow-sm" role="alert">
-                <h5 class="alert-heading fw-bold mb-1">Article Rejected by Administrator</h5>
-                <p class="mb-2"><strong>Reason:</strong> @Model.RejectionReason</p>
+                <div class="d-flex align-items-center mb-1">
+                    <i class="bi bi-exclamation-octagon-fill text-danger fs-4 me-2"></i>
+                    <h5 class="alert-heading fw-bold mb-0">Article Did Not Pass AI Editorial Review</h5>
+                </div>
+                <p class="mb-2 mt-2"><strong>AI Feedback &amp; Guidelines:</strong> @Model.RejectionReason</p>
                 <hr />
-                <small class="mb-0">Please update the article to resolve the administrator's feedback, then click "Resubmit for Review" below.</small>
+                <small class="mb-0 text-muted">Please update your article to address the points above, then click <strong>"Resubmit for AI Review"</strong> below. If your revised article passes, it will be published immediately.</small>
             </div>
         }
         else if (Model.Status == NewsWebApp.Models.ArticleStatus.Pending)
@@ -35,13 +38,13 @@
         else if (Model.Status == NewsWebApp.Models.ArticleStatus.Approved)
         {
             <div class="alert alert-info mb-4 shadow-sm" role="alert">
-                <strong>Status: Approved.</strong> Notice: Saving changes to this approved article will resubmit it as <strong>Pending</strong> for administrator re-approval before updates go live.
+                <strong>Status: Approved.</strong> Notice: Saving changes to this approved article will automatically run Gemini AI review on your new edits before updates go live.
             </div>
         }
 
         <div class="card shadow-sm">
             <div class="card-body p-4">
-                <form asp-controller="Author" asp-action="Edit" asp-route-id="@Model.Id" method="post">
+                <form id="articleEditForm" asp-controller="Author" asp-action="Edit" asp-route-id="@Model.Id" method="post">
                     @Html.AntiForgeryToken()
                     <input type="hidden" asp-for="Id" />
                     <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
@@ -83,12 +86,19 @@
                         <span asp-validation-for="Content" class="text-danger small"></span>
                     </div>
 
+                    <!-- Loading Status Indicator -->
+                    <div id="aiReviewLoadingBanner" class="alert alert-info py-2 px-3 mb-3 d-none align-items-center">
+                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                        <div><strong>Re-evaluating updated article with Gemini AI...</strong> Please wait a moment.</div>
+                    </div>
+
                     <div class="d-flex justify-content-between align-items-center pt-3 border-top">
                         <a asp-controller="Author" asp-action="Dashboard" class="btn btn-outline-secondary">
                             Cancel
                         </a>
-                        <button type="submit" class="btn btn-primary px-4">
-                            @(Model.Status == NewsWebApp.Models.ArticleStatus.Rejected ? "Resubmit for Review" : "Save Changes")
+                        <button type="submit" id="btnEditSubmit" class="btn btn-primary px-4">
+                            <span id="btnEditSpinner" class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                            <span id="btnEditText">@(Model.Status == NewsWebApp.Models.ArticleStatus.Rejected ? "Resubmit for Review" : "Save Changes")</span>
                         </button>
                     </div>
                 </form>
@@ -99,4 +109,29 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('articleEditForm');
+            const submitBtn = document.getElementById('btnEditSubmit');
+            const submitSpinner = document.getElementById('btnEditSpinner');
+            const submitText = document.getElementById('btnEditText');
+            const loadingBanner = document.getElementById('aiReviewLoadingBanner');
+
+            if (form && submitBtn) {
+                form.addEventListener('submit', function (e) {
+                    if (window.jQuery && !$(form).valid()) {
+                        return;
+                    }
+
+                    submitBtn.disabled = true;
+                    submitSpinner.classList.remove('d-none');
+                    submitText.textContent = 'Reviewing with Gemini AI...';
+                    if (loadingBanner) {
+                        loadingBanner.classList.remove('d-none');
+                        loadingBanner.classList.add('d-flex');
+                    }
+                });
+            }
+        });
+    </script>
 }

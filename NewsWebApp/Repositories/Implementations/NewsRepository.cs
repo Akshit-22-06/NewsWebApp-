@@ -82,6 +82,73 @@ namespace NewsWebApp.Repositories.Implementations
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<ViewModels.TrendingArticleDto>> GetTrendingTodayAsync(int count = 5)
+        {
+            var cutoff = DateTime.UtcNow.AddHours(-24);
+
+            // 1. Group recent views by article ID for the last 24 hours
+            var recentViewsDict = await _context.ArticleViews
+                .Where(v => v.ViewedAt >= cutoff)
+                .GroupBy(v => v.NewsArticleId)
+                .Select(g => new { ArticleId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.ArticleId, x => x.Count);
+
+            // 2. Fetch approved and published articles
+            var candidateArticles = await _context.NewsArticles
+                .Where(a => a.IsPublished && a.Status == ArticleStatus.Approved)
+                .Include(a => a.Category)
+                .ToListAsync();
+
+            // 3. Score and rank articles:
+            // High weight to views today (last 24h), then engagement (likes), then recency
+            var ranked = candidateArticles
+                .Select(a =>
+                {
+                    int viewsToday = recentViewsDict.TryGetValue(a.Id, out var rv) ? rv : 0;
+                    return new ViewModels.TrendingArticleDto
+                    {
+                        Id = a.Id,
+                        Title = a.Title,
+                        Slug = a.Slug,
+                        CategoryName = a.Category?.Name ?? "General",
+                        CategorySlug = a.Category?.Slug ?? "general",
+                        ViewsToday = viewsToday,
+                        TotalViews = a.ViewCount,
+                        LikeCount = a.LikeCount,
+                        PublishedDate = a.PublishedDate,
+                        FormattedTimeAgo = FormatTimeAgo(a.PublishedDate ?? a.CreatedAt)
+                    };
+                })
+                .OrderByDescending(x => x.ViewsToday)
+                .ThenByDescending(x => x.LikeCount)
+                .ThenByDescending(x => x.PublishedDate ?? DateTime.MinValue)
+                .ThenByDescending(x => x.TotalViews)
+                .Take(count)
+                .ToList();
+
+            return ranked;
+        }
+
+        private static string FormatTimeAgo(DateTime dateTime)
+        {
+            var diff = DateTime.UtcNow - dateTime;
+            if (diff.TotalMinutes < 60)
+            {
+                int mins = Math.Max(1, (int)diff.TotalMinutes);
+                return $"{mins}m ago";
+            }
+            if (diff.TotalHours < 24)
+            {
+                int hrs = (int)diff.TotalHours;
+                return $"{hrs}h ago";
+            }
+            if (diff.TotalDays < 2)
+            {
+                return "Yesterday";
+            }
+            return dateTime.ToString("MMM dd");
+        }
+
         public async Task<IEnumerable<NewsArticle>> GetRelatedAsync(int articleId, int categoryId, int count)
         {
             return await _context.NewsArticles
@@ -165,14 +232,36 @@ namespace NewsWebApp.Repositories.Implementations
             }
         }
 
-        public async Task IncrementViewCountAsync(int id)
+        public async Task IncrementViewCountAsync(int id, string? viewerHash = null)
         {
             var article = await _context.NewsArticles.FindAsync(id);
-            if (article != null)
+            if (article == null) return;
+
+            // Anti-inflation throttling: if the same viewer viewed this article in the last 15 minutes, skip
+            if (!string.IsNullOrWhiteSpace(viewerHash))
             {
-                article.ViewCount++;
-                await _context.SaveChangesAsync();
+                var throttleCutoff = DateTime.UtcNow.AddMinutes(-15);
+                bool hasRecentView = await _context.ArticleViews.AnyAsync(v =>
+                    v.NewsArticleId == id &&
+                    v.ViewerHash == viewerHash &&
+                    v.ViewedAt >= throttleCutoff);
+
+                if (hasRecentView)
+                {
+                    return;
+                }
             }
+
+            article.ViewCount++;
+
+            _context.ArticleViews.Add(new ArticleView
+            {
+                NewsArticleId = id,
+                ViewedAt = DateTime.UtcNow,
+                ViewerHash = viewerHash
+            });
+
+            await _context.SaveChangesAsync();
         }
 
         public async Task IncrementLikeCountAsync(int id)

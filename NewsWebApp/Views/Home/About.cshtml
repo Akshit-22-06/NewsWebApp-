@@ -1,32 +1,36 @@
 @{
-    ViewData["Title"] = "About";
+    ViewData["Title"] = "About NewsBase";
 }
 
-<h1>@ViewData["Title"]</h1>
+<div class="container my-4" style="max-width: 860px;">
+    <div class="mb-4 pb-2 border-bottom">
+        <h1 class="editorial-headline h2 mb-1">About NewsBase</h1>
+        <p class="text-muted small mb-0">Independent Journalism &bull; Ethical Verification &bull; Global Wire Digests</p>
+    </div>
 
-<h4>NewsSphere Editorial Platform</h4>
-<hr />
+    <div class="editorial-body">
+        <p class="lead">
+            NewsBase is a digital journalism platform engineered for high-integrity news reporting, in-depth feature commentary, and curated global news wire feeds.
+        </p>
 
-<p class="lead">
-    Dedicated to rigorous investigative journalism, impartial global coverage, and democratic public discourse.
-</p>
+        <h4 class="h5 font-serif mt-4 mb-2">Our Editorial Mission</h4>
+        <p>
+            Founded on the principle that informed public discourse requires fearless, non-sensationalized reporting, NewsBase covers world affairs, science, enterprise technology, environmental policy, and economics with rigorous impartiality.
+        </p>
 
-<h5>Our Mission &amp; Editorial Ethics</h5>
-<p>
-    Founded with the goal of upholding fearless independent reporting, NewsSphere covers world affairs, science, technology,
-    environmental policy, and business developments with unwavering accuracy and impartiality.
-</p>
-<p>
-    We hold our newsroom to strict verification protocols: every report undergoes multi-source corroboration before publication.
-    Our authors disclose relevant industry relationships, and we clearly separate factual news reports from opinion analysis.
-</p>
+        <h4 class="h5 font-serif mt-4 mb-2">Automated Editorial Moderation</h4>
+        <p>
+            To maintain respectful community discourse and editorial quality, our publishing pipeline incorporates Google Gemini AI automated evaluation. Submissions are screened in real-time for profanity, hate speech, harassment, spam, and structural quality, providing immediate actionable guidance to contributing authors while ensuring approved stories meet high standards before public release.
+        </p>
 
-<h5>Architecture</h5>
-<p>
-    This web application is engineered with ASP.NET Core MVC, Entity Framework Core, ASP.NET Core Identity, and Bootstrap 5.
-</p>
+        <h4 class="h5 font-serif mt-4 mb-2">Technical Foundation</h4>
+        <p>
+            NewsBase is built on a modern ASP.NET Core MVC architecture with Entity Framework Core, ASP.NET Core Identity authentication, SQLite relational database persistence, and Currents API news wire integration.
+        </p>
 
-<div class="mt-4">
-    <a asp-controller="News" asp-action="Index" class="btn btn-primary">Browse News</a>
-    <a asp-controller="Author" asp-action="Index" class="btn btn-outline-secondary">Meet Our Journalists</a>
+        <div class="mt-4 pt-3 border-top d-flex gap-2">
+            <a asp-controller="News" asp-action="Index" class="btn btn-editorial-primary btn-sm px-3">Browse News</a>
+            <a asp-controller="Author" asp-action="Index" class="btn btn-editorial-outline btn-sm px-3">Meet Our Journalists</a>
+        </div>
+    </div>
 </div>

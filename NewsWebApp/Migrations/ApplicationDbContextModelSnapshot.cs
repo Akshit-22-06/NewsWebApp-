@@ -251,6 +251,33 @@ namespace NewsWebApp.Migrations
                     b.ToTable("ArticleBookmarks");
                 });
 
+            modelBuilder.Entity("NewsWebApp.Models.ArticleView", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("NewsArticleId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("ViewedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ViewerHash")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ViewedAt");
+
+                    b.HasIndex("NewsArticleId", "ViewedAt");
+
+                    b.HasIndex("NewsArticleId", "ViewerHash", "ViewedAt");
+
+                    b.ToTable("ArticleViews");
+                });
+
             modelBuilder.Entity("NewsWebApp.Models.Author", b =>
                 {
                     b.Property<int>("Id")
@@ -372,6 +399,20 @@ namespace NewsWebApp.Migrations
                     b.Property<int>("LikeCount")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("ModeratedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ModerationCategories")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ModerationModel")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("ModerationQualityScore")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime?>("PublishedDate")
                         .HasColumnType("TEXT");
 
@@ -435,6 +476,126 @@ namespace NewsWebApp.Migrations
                     b.ToTable("NewsArticles");
                 });
 
+            modelBuilder.Entity("NewsWebApp.Models.NewsletterEdition", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CuratedJson")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EditionDate")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ErrorDetails")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("FailedDeliveries")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("HtmlContent")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PlainTextContent")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("QueuedCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("SentAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SuccessfulDeliveries")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TotalRecipients")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EditionDate")
+                        .IsUnique();
+
+                    b.ToTable("NewsletterEditions");
+                });
+
+            modelBuilder.Entity("NewsWebApp.Models.NewsletterSetting", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AdminTestEmail")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DailyEmailQuota")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("EmailsSentToday")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsAutoSendEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("LastRunAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastRunStatus")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("NextRunAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("QuotaResetDateUtc")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SendHour")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SendMinute")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SenderEmail")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SenderName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TimeZoneId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("NewsletterSettings");
+                });
+
             modelBuilder.Entity("NewsWebApp.Models.NewsletterSubscriber", b =>
                 {
                     b.Property<int>("Id")
@@ -449,12 +610,29 @@ namespace NewsWebApp.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("LastDeliveredAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("LastDeliveredEditionId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("SubscribedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UnsubscribeToken")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UnsubscribedAt")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("UnsubscribeToken")
                         .IsUnique();
 
                     b.ToTable("NewsletterSubscribers");
@@ -530,6 +708,17 @@ namespace NewsWebApp.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("NewsWebApp.Models.ArticleView", b =>
+                {
+                    b.HasOne("NewsWebApp.Models.NewsArticle", "NewsArticle")
+                        .WithMany("Views")
+                        .HasForeignKey("NewsArticleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("NewsArticle");
+                });
+
             modelBuilder.Entity("NewsWebApp.Models.Author", b =>
                 {
                     b.HasOne("NewsWebApp.Models.ApplicationUser", "User")
@@ -603,6 +792,8 @@ namespace NewsWebApp.Migrations
                     b.Navigation("Bookmarks");
 
                     b.Navigation("Comments");
+
+                    b.Navigation("Views");
                 });
 #pragma warning restore 612, 618
         }
